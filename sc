@@ -4,7 +4,7 @@
 set -a
 
 # Search path for some parsing tool
-# https://pastebin.com/iEAZJUwM
+# https://github.com/FRUiT-git/putf
 : ${SEND:="$(which putf)"}
 
 # Procedure parsing useful information on screen
