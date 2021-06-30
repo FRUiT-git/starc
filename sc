@@ -47,6 +47,12 @@ _scvkb=
 # i.e. "/path/to/cache"
 _scglc=
 
+# [Optional] Winetricks tools
+# List of addons Winetricks should add to a new prefix in addition
+# to the required arial and dxvk, separated by spaces
+# i.e. "vcrun2019 corefonts win10"
+_scwtt=
+
 # Define whether or not to launch some external tools/helpers
 # 0: disable
 # 1: enable
@@ -154,8 +160,8 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 # Prepare new prefix
 [ -f "$WINEPREFIX/system.reg" ] || {
   inf "Configuring the new prefix, please wait" "wine" 31
-  $rbin/winboot -u >> "$logfile" 2>&1
-  winetricks arial dxvk >> "$logfile" 2>&1
+  "$rbin"/wineboot -u >> "$logfile" 2>&1
+  winetricks arial dxvk $_scwtt >> "$logfile" 2>&1
   [ -f "$_scins" ] && "$wine" "$_scins" >> "$logfile" 2>&1 || inf "Installation file not found" "game" 31
   sleep 5 && pkill "RSI" >/dev/null 2>&1
   wine_cfg='true'
