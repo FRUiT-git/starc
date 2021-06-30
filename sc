@@ -3,8 +3,6 @@
 # Set script shell flag allexport. Only affects within script scope
 set -a
 
-DEBUG=
-
 # User defined configuration, fill those vars according to your system
 #
 # Vars begining with an underscore (_) require strings (path)
