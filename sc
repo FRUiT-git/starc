@@ -14,13 +14,13 @@ DEBUG=
 # [Required] Game installation executable
 # Path to RSI-Setup-*.*.**.exe launcher install file
 # i.e. "$HOME/download/RSI-Setup-1.4.11.exe"
-_scins="$HOME/Games/RSI-Setup-1.4.11.exe"
+_scins=
 
 # [Optional] Game prefix
 # Path to the wine prefix folder where Star Citizen is installed
 # If prefix doesn't exist, it will be created and configured
 # If not set, prefix will default to "$HOME/Games/starcitizen"
-_scpre="$HOME/Games/sctkg"
+_scpre=
 
 # [Optional] Runner
 # Name of the wine runner folder
@@ -31,7 +31,7 @@ _scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
 # i.e. "/usr/share/vulkan/icd.d/nvidia_icd.json"
-_scicd="/usr/share/vulkan/icd.d/nvidia_icd.json"
+_scicd=
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
@@ -55,11 +55,11 @@ _scglc=
 
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # https://github.com/FRUiT-git/putf
-USEPUTF=1
+USEPUTF=
 
 # Enable/disable Feral Game Mode
 # https://github.com/FeralInteractive/gamemode
-USEGMR=1
+USEGMR=
 
 # Enable/disable Mango Hud
 # https://github.com/flightlessmango/MangoHud
@@ -84,15 +84,15 @@ DXVKAS=
 
 # Enable/disable DXVK state cache
 # If not set, value defaults to 0
-DXVKSC=1
+DXVKSC=
 
 # Enable/disable Open GL shader cache
 # If not set, value defaults to 0
-USEGLC=1
+USEGLC=
 
 # Enable/disable wine ESYNC
 # If not set, value defaults to 0
-WINEESYNC=1
+WINEESYNC=
 
 # Enable/disable Kwin Compositor
 # If not set or set to 0, disable compositing
