@@ -44,7 +44,7 @@ _scvkb=
 
 # [Optional] DXVK state and OpenGL shader cache path
 # If not set, a default cache path will be created inside prefix folder
-# i.e. /path/to/cache
+# i.e. "/path/to/cache"
 _scglc=
 
 # Define whether or not to launch some external tools/helpers
