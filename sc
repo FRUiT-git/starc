@@ -77,7 +77,7 @@ BASALT=
 # If not set, value defaults to 0
 USETOPT=
 
-# Define DXVK log level (set to none may fasten execution by reducing disk I/O)
+# DXVK log level (set to none may fasten execution by reducing disk I/O)
 # If not set, value defaults to 'none'
 # Values: none|error|warn|info|debug
 DXVKLL=
@@ -114,22 +114,28 @@ _scarg=
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
 
 # Procedure parsing useful information on screen
-inf () { [ "$p" ] && $p -c ${3:-32} -L "${2}" "${1}" || printf "  [%04b] %b\n" "${2}" "${1}" ; }
+inf () { [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || printf "  [%04b] %b\n" "$2" "$1" ; }
 
 # Procedure handling fatal errors
-err () { [ "$p" ] && $p -e "${2}" "${1}" || printf "  [%04b] %b\n" "${1}" "Error: ${2}" ; exit $1 ; }
+err () { [ "$p" ] && $p -e "$2" "$1" || printf "  [%04b] %b\n" "$1" "Error: $2" ; exit $1 ; }
 
 # Procedure converting an amount of seconds (duration) in the format HH:MM
 _hm () {
-  local S=${1} ; local h=$(($S%86400/3600)) ; local m=$(($S%3600/60))
+  local S=$1 ; local h=$(($S%86400/3600)) ; local m=$(($S%3600/60))
   inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time"
 }
 
+synopsis () {
+  printf "%b\n" "Help"
+  exit 0
+}
+
 # Process command line arguments
-if [ "^${1#-}" != "^${1}" ]; then while getopts ":cpr" a; do case ${a} in
+if [ "^${1#-}" != "^${1}" ]; then while getopts ":cprh" a; do case $a in
   c) wine_cfg='true'  ;;
   p) wine_cpl='true'  ;;
   r) rm_cache='true'  ;;
+  h) synopsis         ;;
 esac ; done ; shift ; fi
 
 # Wine prefix path settings
@@ -163,12 +169,12 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
   "$rbin"/wineboot -u >> "$logfile" 2>&1
   winetricks arial dxvk $_scwtt >> "$logfile" 2>&1
   [ -f "$_scins" ] && "$wine" "$_scins" >> "$logfile" 2>&1 || inf "Installation file not found" "game" 31
-  sleep 5 && pkill "RSI" >/dev/null 2>&1
+  sleep 4 && pkill "RSI" >/dev/null 2>&1
   wine_cfg='true'
   wine_cpl='true'
 }
 
-# Define GL shader and DXVK state cache path inside prefix, eventually create it
+# Define GL shader and DXVK state cache path, eventually create it
 mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
 
 # Define the DXVK config file path
@@ -210,7 +216,7 @@ case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
 sclp="$rsip/StarCitizen/LIVE"
 
-# Set which executable to use, depending on login infos file existance (loginData.json)
+# Set executable, depending on login infos file existance (loginData.json)
 # User must capture this file during game's execution and copy it back
 # in the ../StarCitizen/LIVE directory after the launcher closed
 [ -f "$sclp/loginData.json" ] && \
@@ -219,6 +225,7 @@ sclp="$rsip/StarCitizen/LIVE"
 
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found in Wine prefix" "game" || err 2 "Executable not found"
+[ "$DISPLAY" ] || err 3 "No graphical environment found"
 
 # Purge all cache files
 [ "$rm_cache" ] && {
@@ -242,7 +249,7 @@ st=$(date +%s)
 
 # Launch wine configuration tools depending on command line parameters
 [ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching configuration panel" "wine"
-[ "$wine_cfg" ] && "$rbin/winecfg" >> "$logfile" 2>&1
+[ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$wine" control >> "$logfile" 2>&1
 
 # Output log path and time, everything went good so far :)
@@ -255,8 +262,8 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 [ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor suspend >/dev/null 2>&1
 
 # Finally, launch the game
-[ ! "$DEBUG" ] && {
-  $cmd "$wine" "$game" ${_scarg} >> "$logfile" 2>&1
+[ "$DEBUG" ] || {
+  $cmd "$wine" "$game" $_scarg >> "$logfile" 2>&1
 }
 
 # Re-enable Kwin's Compositor if it has been disabled
