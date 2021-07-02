@@ -11,20 +11,22 @@ set -a
 
 # [Required] Game installation executable
 # Path to RSI-Setup-*.*.**.exe launcher install file
+# This is required only to create and configure new prefixes
 # i.e. "$HOME/download/RSI-Setup-1.4.11.exe"
-_scins=
+_scins="$HOME/Games/RSI-Setup-1.4.11.exe"
 
 # [Optional] Game prefix
 # Path to the wine prefix folder where Star Citizen is installed
 # If prefix doesn't exist, it will be created and configured
-# If not set, prefix will default to "$HOME/Games/starcitizen"
+# If not set, script will use the default location below
+# i.e. "$HOME/Games/starcitizen"
 _scpre=
 
 # [Optional] Runner
-# Name of the wine runner folder
+# Full name of the wine runner folder
 # If not set, script will try to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
+_scrun=
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
@@ -110,14 +112,16 @@ _scarg=
 # DO NOT EDIT BELOW THIS LINE                                   #
 #################################################################
 
+DEBUG=
+
 # Lookup putf
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
 
 # Procedure parsing useful information on screen
-inf () { [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || printf "  [%04b] %b\n" "$2" "$1" ; }
+inf () { [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1" ; }
 
 # Procedure handling fatal errors
-err () { [ "$p" ] && $p -e "$2" "$1" || printf "  [%04b] %b\n" "$1" "Error: $2" ; exit $1 ; }
+err () { [ "$p" ] && $p -e "$2" "$1" || printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" ; exit $1 ; }
 
 # Procedure converting an amount of seconds (duration) in the format HH:MM
 _hm () {
@@ -125,8 +129,18 @@ _hm () {
   inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time"
 }
 
+# Output command line parameters settings
 synopsis () {
-  printf "%b\n" "Help"
+  cat <<EOF
+Usage: ${0##*/} [OPTION]
+    Star Citizen launcher script
+    
+Options:
+    -h      Show this help
+    -c      Launch 'winecfg' during startup
+    -p      Launch wine control panel during startup
+    -r      Delete ALL cached files (game + dxvk + opengl)
+EOF
   exit 0
 }
 
@@ -136,7 +150,7 @@ if [ "^${1#-}" != "^${1}" ]; then while getopts ":cprh" a; do case $a in
   p) wine_cpl='true'  ;;
   r) rm_cache='true'  ;;
   h) synopsis         ;;
-esac ; done ; shift ; fi
+esac ; done ; shift $(($OPTIND-1)) ; fi
 
 # Wine prefix path settings
 mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}"
@@ -158,7 +172,7 @@ inf "Version: $($wine --version)" "wine"
 
 # Specify some wine environment variables. Link to runner directories
 WINELOADER="$wine"
-WINEDLLOVERRIDES=dxgi=n
+WINEDLLOVERRIDES="dxgi=b,n"
 WINEDEBUG=-all
 WINEDLLPATH=$(readlink -e "${rbin%/*}/lib64/wine" || readlink -e "${rbin%/*}/lib/wine")
 inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
@@ -177,6 +191,17 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 # Define GL shader and DXVK state cache path, eventually create it
 mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
 
+# Specify where to put the DXVK cache files
+inf "State cache: ${DXVK_STATE_CACHE_PATH:=${cache:-not found}} [dxvk]" "${DXVK_STATE_CACHE:=${DXVKSC:-0}}"
+
+# Specify where to put the OpenGL cache files
+inf "GL: Shader cache: ${__GL_SHADER_DISK_CACHE_PATH:=${cache:-not found}}" "${__GL_SHADER_DISK_CACHE:=${USEGLC:-0}}"
+#__GL_SHADER_DISK_CACHE_SIZE=17179869184
+#__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=0
+
+# Whether or not threaded optimizations should be used by OpenGL
+inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
+
 # Define the DXVK config file path
 DXVK_CONFIG_FILE=$(readlink -e ${_scdxc:-"$HOME/.dxvk/dxvk.conf"})
 inf "${DXVK_CONFIG_FILE:-Configuration file not found}" "dxvk"
@@ -190,17 +215,6 @@ inf "Log level [dxvk]" "${DXVK_LOG_LEVEL:=${DXVKLL:-none}}"
 
 # Whether or not DXVK should use ASYNC
 inf "Async [dxvk]" "${DXVK_ASYNC:=${DXVKAS:-0}}"
-
-# Specify a directory where to put the DXVK cache files
-inf "State cache: ${DXVK_STATE_CACHE_PATH:=${cache:-not found}} [dxvk]" "${DXVK_STATE_CACHE:=${DXVKSC:-0}}"
-
-# Specify a directory where to put the OpenGL cache files
-inf "GL: Shader cache: ${__GL_SHADER_DISK_CACHE_PATH:=${cache:-not found}}" "${__GL_SHADER_DISK_CACHE:=${USEGLC:-0}}"
-#__GL_SHADER_DISK_CACHE_SIZE=17179869184
-#__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=0
-
-# Whether or not threaded optimizations should be used by OpenGL
-inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
 
 # Specify where's the VKBasalt configuration file
 VKBASALT_CONFIG_FILE=$(readlink -e ${_scvkb:-"$WINEPREFIX/vkbasalt.conf"})
