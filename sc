@@ -13,25 +13,25 @@ set -a
 # Path to RSI-Setup-*.*.**.exe launcher install file
 # This is required only to create and configure new prefixes
 # i.e. "$HOME/download/RSI-Setup-1.4.11.exe"
-_scins="$HOME/Games/RSI-Setup-1.4.11.exe"
+_scins=
 
 # [Optional] Game prefix
 # Path to the wine prefix folder where Star Citizen is installed
 # If prefix doesn't exist, it will be created and configured
 # If not set, script will use the default location below
 # i.e. "$HOME/Games/starcitizen"
-_scpre="$HOME/Games/sctkg"
+_scpre=
 
 # [Optional] Runner
 # Full name of the wine runner folder
 # If not set, script will try to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
+_scrun=
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
 # i.e. "/usr/share/vulkan/icd.d/nvidia_icd.json"
-_scicd="/usr/share/vulkan/icd.d/nvidia_icd.json"
+_scicd=
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
@@ -67,11 +67,11 @@ _scarg=
 
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # https://github.com/FRUiT-git/putf
-USEPUTF=1
+USEPUTF=
 
 # Enable/disable Feral Game Mode
 # https://github.com/FeralInteractive/gamemode
-USEGMR=1
+USEGMR=
 
 # Enable/disable Mango Hud
 # https://github.com/flightlessmango/MangoHud
@@ -110,7 +110,7 @@ WINEESYNC=1
 # Only effects if FSYNC capable kernel and runner are installed
 # Enabling this automatically inactivates ESYNC
 # If not set, value defaults to 0
-WINEFSYNC=1
+WINEFSYNC=
 
 # Enable/disable Kwin Compositor
 # If not set or set to 0, disable compositing
@@ -194,7 +194,14 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
   inf "Configuring the new prefix, please wait" "conf" 31
   winetricks arial dxvk $_scwtt >> "$logfile" 2>&1
   "$rbin"/wineboot -u >> "$logfile" 2>&1
+  wine_cfg='true'
+  wine_cpl='true'
 }
+
+# Launch wine configuration tools depending on command line parameters
+[ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching configuration panel" "wine"
+[ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
+[ "$wine_cpl" ] && "$wine" control >> "$logfile" 2>&1
 
 # Store the Robert Space Industries and Star Citizen LIVE locations
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
@@ -208,8 +215,6 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
   [ -f "$_scins" ] && {
     "$wine" "$_scins" >> "$logfile" 2>&1 || inf "Installation aborted or failed" "conf" 31
     sleep 4 && pkill "RSI" >/dev/null 2>&1
-    wine_cfg='true'
-    wine_cpl='true'
   } || inf "Installation not found" "conf" 31
 }
 
@@ -221,11 +226,6 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found inside prefix" "game" || err 2 "Game executable not found"
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
-
-# Launch wine configuration tools depending on command line parameters
-[ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching configuration panel" "wine"
-[ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
-[ "$wine_cpl" ] && "$wine" control >> "$logfile" 2>&1
 
 # Define GL shader and DXVK state cache path, eventually create it
 mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
