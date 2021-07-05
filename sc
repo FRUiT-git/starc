@@ -20,18 +20,18 @@ _scins=
 # If prefix doesn't exist, it is created and configured
 # If not set, script will use the default location below
 # i.e. "$HOME/Games/starcitizen"
-_scpre=
+_scpre="$HOME/Games/sctkg"
 
 # [Optional] Runner
 # Full name of the wine runner folder
 # If not set, script tries to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun=
+_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
 # i.e. "/usr/share/vulkan/icd.d/nvidia_icd.json"
-_scicd=
+_scicd="/usr/share/vulkan/icd.d/nvidia_icd.json"
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
@@ -68,11 +68,11 @@ _scarg="--use-gl=osmesa"
 
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # https://github.com/FRUiT-git/putf
-USEPUTF=
+USEPUTF=1
 
 # Enable/disable Feral Game Mode
 # https://github.com/FeralInteractive/gamemode
-USEGMR=
+USEGMR=1
 
 # Enable/disable Mango Hud
 # https://github.com/flightlessmango/MangoHud
@@ -105,13 +105,13 @@ USEGLC=1
 
 # Enable/disable wine ESYNC
 # If not set, value defaults to 0
-WINEESYNC=
+WINEESYNC=1
 
 # Enable/disable wine FSYNC
 # Only effects if FSYNC capable kernel and runner are installed
 # Enabling this automatically inactivates ESYNC
 # If not set, value defaults to 0
-WINEFSYNC=
+WINEFSYNC=1
 
 # Enable/disable Kwin Compositor
 # If not set or set to 0, disable compositing
@@ -152,13 +152,6 @@ EOF
   exit 0
 }
 
-# Sanity check
-[ "$DISPLAY" ] || err 3 "No graphical environment found"
-
-# Wine prefix path settings
-mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}"
-inf "$WINEPREFIX [prefix]" "wine" 35
-
 # Process command line arguments
 [ "^${1#-}" != "^${1}" ] && { while getopts ":cprhd" a; do case $a in
   c) wine_cfg='true'  ;;
@@ -167,6 +160,13 @@ inf "$WINEPREFIX [prefix]" "wine" 35
   h) synopsis         ;;
   d) DEBUG=1          ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
+
+# Sanity check
+[ "$DISPLAY" ] || err 3 "No graphical environment found"
+
+# Wine prefix path settings
+mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}"
+inf "$WINEPREFIX [prefix]" "wine" 35
 
 # Define path to script output (shell log)
 > "${logfile:=$WINEPREFIX/sc-last.log}"
@@ -198,7 +198,7 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
   _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
 }
 for t in $_scwtt; do
-  grep -q -E "$t" $WINEPREFIX/winetricks.log 2>/dev/null || {
+  grep -q "$t" $WINEPREFIX/winetricks.log 2>/dev/null || {
     inf "Installing $t [winetricks]" "conf" 31
     winetricks $t >> "$logfile" 2>&1 && wineserver -w || inf "Failed" "122" 31
   }
