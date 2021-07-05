@@ -26,7 +26,7 @@ _scpre=
 # Full name of the wine runner folder
 # If not set, script will try to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun=
+#_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
@@ -154,6 +154,9 @@ EOF
   exit 0
 }
 
+# Sanity check
+[ "$DISPLAY" ] || err 3 "No graphical environment found"
+
 # Process command line arguments
 [ "^${1#-}" != "^${1}" ] && { while getopts ":cprhd" a; do case $a in
   c) wine_cfg='true'  ;;
@@ -191,15 +194,18 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 
 # Prepare new prefix
 [ -f "$WINEPREFIX/system.reg" ] || {
-  inf "Configuring the new prefix, please wait" "conf" 31
-  winetricks arial dxvk $_scwtt >> "$logfile" 2>&1
-  "$rbin"/wineboot -u >> "$logfile" 2>&1
   wine_cfg='true'
   wine_cpl='true'
+  inf "Configuring the new prefix, please wait" "conf" 31
+  _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
+  for t in $_scwtt; do
+    inf "Installing $t [winetricks]" "conf" 31
+    winetricks $t >> "$logfile" 2>&1
+  done
 }
 
 # Launch wine configuration tools depending on command line parameters
-[ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching configuration panel" "wine"
+[ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$wine" control >> "$logfile" 2>&1
 
@@ -212,10 +218,14 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 
 # If game is not installed, try to launch installation
 [ -f "$game" ] || {
-  [ -f "$_scins" ] && {
-    "$wine" "$_scins" >> "$logfile" 2>&1 || inf "Installation aborted or failed" "conf" 31
-    sleep 4 && pkill "RSI" >/dev/null 2>&1
-  } || inf "Installation not found" "conf" 31
+  [ ! -f "$_scins" ] && inf "Game installation not found" "conf" 31 || {
+    inf "Starting game installation ${_scins##*/}" "conf" 31
+    "$wine" "$_scins" >> "$logfile" 2>&1 && {
+      inf "${_scins##*/} has been installed succesfully" "conf" 31
+      sleep 1 ; pkill "RSI" >/dev/null 2>&1
+      inf "Waiting for processes to end" "conf" 31 ; sleep 5
+    } || inf "Installation aborted or failed" "conf" 31
+  }
 }
 
 # Change executable, depending on login infos file existance (loginData.json)
@@ -225,7 +235,6 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found inside prefix" "game" || err 2 "Game executable not found"
-[ "$DISPLAY" ] || err 3 "No graphical environment found"
 
 # Define GL shader and DXVK state cache path, eventually create it
 mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
