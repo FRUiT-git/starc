@@ -17,16 +17,16 @@ _scins=
 
 # [Optional] Game prefix
 # Path to the wine prefix folder where Star Citizen is installed
-# If prefix doesn't exist, it will be created and configured
+# If prefix doesn't exist, it is created and configured
 # If not set, script will use the default location below
 # i.e. "$HOME/Games/starcitizen"
 _scpre=
 
 # [Optional] Runner
 # Full name of the wine runner folder
-# If not set, script will try to use the default system wine executable
+# If not set, script tries to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-#_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
+_scrun=
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
@@ -35,29 +35,30 @@ _scicd=
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
-# If not set, script will try to lookup in home default path
+# If not set, script tries to lookup in home default path
 # i.e. "$HOME/.dxvk/dxvk.conf"
 _scdxc=
 
 # [Optional] VKBasalt configuration file path
-# If not set, script will try to lookup inside prefix folder
+# If not set, script tries to lookup inside prefix folder
 # i.e. "/path/to/vkbasalt.conf"
 _scvkb=
 
 # [Optional] DXVK state and OpenGL shader cache path
-# If not set, a default cache path will be created inside prefix folder
+# If not set, a default cache path is created inside prefix folder
 # i.e. "/path/to/cache"
 _scglc=
 
 # [Optional] Winetricks tools
 # List of addons Winetricks should add to a new prefix in addition
 # to the required arial and dxvk, separated by spaces
+# Script looks up at start and installs any new verb found here
 # i.e. "vcrun2019 corefonts win10"
 _scwtt=
 
 # If RSI Launcher.exe window appears white/blank, override the renderer
 # i.e. "--use-gl=osmesa"
-_scarg=
+_scarg="--use-gl=osmesa"
 
 # Define whether or not to launch some external tools/helpers
 #
@@ -104,7 +105,7 @@ USEGLC=1
 
 # Enable/disable wine ESYNC
 # If not set, value defaults to 0
-WINEESYNC=1
+WINEESYNC=
 
 # Enable/disable wine FSYNC
 # Only effects if FSYNC capable kernel and runner are installed
@@ -135,9 +136,6 @@ _hm () {
   inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time"
 }
 
-# Function checking for FSYNC enabled kernel
-isfsync () { grep -q -E "liquorix|xan" /proc/version ; }
-
 # Output command line parameters settings
 synopsis () {
   cat <<EOF
@@ -157,6 +155,10 @@ EOF
 # Sanity check
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
 
+# Wine prefix path settings
+mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}"
+inf "$WINEPREFIX [prefix]" "wine" 35
+
 # Process command line arguments
 [ "^${1#-}" != "^${1}" ] && { while getopts ":cprhd" a; do case $a in
   c) wine_cfg='true'  ;;
@@ -165,10 +167,6 @@ EOF
   h) synopsis         ;;
   d) DEBUG=1          ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
-
-# Wine prefix path settings
-mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}"
-inf "$WINEPREFIX [prefix]" "wine" 35
 
 # Define path to script output (shell log)
 > "${logfile:=$WINEPREFIX/sc-last.log}"
@@ -192,17 +190,19 @@ WINEDEBUG=-all
 WINEDLLPATH=$(readlink -e "${rbin%/*}/lib64/wine" || readlink -e "${rbin%/*}/lib/wine")
 inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 
-# Prepare new prefix
+# Configure prefix
 [ -f "$WINEPREFIX/system.reg" ] || {
   wine_cfg='true'
   wine_cpl='true'
   inf "Configuring the new prefix, please wait" "conf" 31
   _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
-  for t in $_scwtt; do
-    inf "Installing $t [winetricks]" "conf" 31
-    winetricks $t >> "$logfile" 2>&1
-  done
 }
+for t in $_scwtt; do
+  grep -q -E "$t" $WINEPREFIX/winetricks.log 2>/dev/null || {
+    inf "Installing $t [winetricks]" "conf" 31
+    winetricks $t >> "$logfile" 2>&1 && wineserver -w || inf "Failed" "122" 31
+  }
+done
 
 # Launch wine configuration tools depending on command line parameters
 [ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
@@ -216,6 +216,10 @@ sclp="$rsip/StarCitizen/LIVE"
 # Set game path
 game="$rsip/RSI Launcher/RSI Launcher.exe"
 
+# Ultimately try to search $HOME if installation path is not set
+_scins=$(readlink -e "$_scins")
+: ${_scins:="$(find $HOME -name "*RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
+
 # If game is not installed, try to launch installation
 [ -f "$game" ] || {
   [ ! -f "$_scins" ] && inf "Game installation not found" "conf" 31 || {
@@ -223,7 +227,8 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
     "$wine" "$_scins" >> "$logfile" 2>&1 && {
       inf "${_scins##*/} has been installed succesfully" "conf" 31
       sleep 1 ; pkill "RSI" >/dev/null 2>&1
-      inf "Waiting for processes to end" "conf" 31 ; sleep 5
+      inf "Waiting for processes to end" "conf" 31
+      wineserver -w
     } || inf "Installation aborted or failed" "conf" 31
   }
 }
@@ -276,13 +281,11 @@ VKBASALT_CONFIG_FILE=$(readlink -e ${_scvkb:-"$WINEPREFIX/vkbasalt.conf"})
 inf "Config file: ${VKBASALT_CONFIG_FILE:-not found} [vkbasalt]" "${ENABLE_VKBASALT:=${BASALT:-0}}"
 
 # Whether or not wine ESYNC and FSYNC should be enabled
-isfsync && [ "${WINEFSYNC:-0}" = "1" ] && unset WINEESYNC
+isfsync=$(\ls /sys/kernel | grep "futex")
+[ "$isfsync" ] && [ "${WINEFSYNC:-0}" = "1" ] && unset WINEESYNC
 inf "Wine E-sync" "${WINEESYNC:=0}"
-isfsync || {
-  unset WINEFSYNC
-  msg=" (disabled)"
-}
-inf "Wine F-sync${msg}" "${WINEFSYNC:=0}" ${msg:+31}
+[ "$isfsync" ] || unset WINEFSYNC
+inf "Wine F-sync (${isfsync:-disabled})" "${WINEFSYNC:=0}"
 
 # Eventually include wine runner bin directory into system PATH
 case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
@@ -324,5 +327,4 @@ _hm $(( $(date +%s) - $st ))
 [ "$gmr" ] && {
   ( sleep 10 ; pkill gamemoded 2>/dev/null ; ) &
 }
-
 
