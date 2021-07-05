@@ -20,18 +20,18 @@ _scins=
 # If prefix doesn't exist, it is created and configured
 # If not set, script will use the default location below
 # i.e. "$HOME/Games/starcitizen"
-_scpre="$HOME/Games/sctkg"
+_scpre=
 
 # [Optional] Runner
 # Full name of the wine runner folder
 # If not set, script tries to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
+_scrun=
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
 # i.e. "/usr/share/vulkan/icd.d/nvidia_icd.json"
-_scicd="/usr/share/vulkan/icd.d/nvidia_icd.json"
+_scicd=
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
@@ -68,11 +68,11 @@ _scarg="--use-gl=osmesa"
 
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # https://github.com/FRUiT-git/putf
-USEPUTF=1
+USEPUTF=
 
 # Enable/disable Feral Game Mode
 # https://github.com/FeralInteractive/gamemode
-USEGMR=1
+USEGMR=
 
 # Enable/disable Mango Hud
 # https://github.com/flightlessmango/MangoHud
@@ -105,13 +105,13 @@ USEGLC=1
 
 # Enable/disable wine ESYNC
 # If not set, value defaults to 0
-WINEESYNC=1
+WINEESYNC=
 
 # Enable/disable wine FSYNC
 # Only effects if FSYNC capable kernel and runner are installed
 # Enabling this automatically inactivates ESYNC
 # If not set, value defaults to 0
-WINEFSYNC=1
+WINEFSYNC=
 
 # Enable/disable Kwin Compositor
 # If not set or set to 0, disable compositing
@@ -154,10 +154,10 @@ EOF
 
 # Process command line arguments
 [ "^${1#-}" != "^${1}" ] && { while getopts ":cprhd" a; do case $a in
+  h) synopsis         ;;
   c) wine_cfg='true'  ;;
   p) wine_cpl='true'  ;;
   r) rm_cache='true'  ;;
-  h) synopsis         ;;
   d) DEBUG=1          ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
 
