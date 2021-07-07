@@ -33,7 +33,7 @@ If the prefix path is not provided, the following default location is used : `$H
 The configuration part in the beginning of the script has been highly commented and documented, with links to the tools and helpers involved, and some short descriptions.
 
 ### No runner
-In case the user hasn't provided a runner's path, the script is trying to use the distribution default wine binary. While there's a change Star Citizen could run with a vanilla wine, it is much recommended ton install and provide a custom runner (as of date).
+In case the user hasn't provided a runner's path, the script is trying to use the distribution default wine binary. While there's a chance Star Citizen could run with a vanilla wine, it is much recommended to install and provide a custom runner (as of date).
 
 
 ## Command line parameters
