@@ -20,18 +20,18 @@ _scins=
 # If prefix doesn't exist, it is created and configured
 # If not set, script will use the default location below
 # i.e. "$HOME/Games/starcitizen"
-_scpre="$HOME/Games/starc"
+_scpre=
 
 # [Optional] Runner
 # Full name of the wine runner folder
 # If not set, script tries to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
+_scrun=
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
 # i.e. "/usr/share/vulkan/icd.d/nvidia_icd.json"
-_scicd="/usr/share/vulkan/icd.d/nvidia_icd.json"
+_scicd=
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
@@ -70,12 +70,12 @@ _scarg="--use-gl=osmesa"
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # Parse and format output messages through a fancy bus
 # https://github.com/FRUiT-git/putf
-USEPUTF=1
+USEPUTF=
 
 # Enable/disable Feral Game Mode
 # Optimise Linux system performance on demand 
 # https://github.com/FeralInteractive/gamemode
-USEGMR=1
+USEGMR=
 
 # Enable/disable Mango Hud
 # A Vulkan and OpenGL overlay for monitoring FPS, temperatures,
@@ -113,13 +113,13 @@ USEGLC=1
 
 # Enable/disable wine ESYNC
 # If not set, value defaults to 0
-WINEESYNC=1
+WINEESYNC=
 
 # Enable/disable wine FSYNC
 # Only effects if FSYNC capable kernel and runner are installed
 # Enabling this automatically inactivates ESYNC
 # If not set, value defaults to 0
-WINEFSYNC=1
+WINEFSYNC=
 
 # Enable/disable Kwin Compositor
 # If not set or set to 0, disable compositing
