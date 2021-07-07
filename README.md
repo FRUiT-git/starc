@@ -73,4 +73,6 @@ Examples : `sc -i "corefonts"`
 
 ### LUG Helper
 [LUG-Helper](https://github.com/the-sane/lug-helper) Star Citizen's Linux Users Group Helper Script 
+### putf
+[putf](https://github.com/FRUiT-git/putf) Use this fancy tool to enhance your console output with formatted messages
 
