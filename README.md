@@ -7,8 +7,9 @@ _This script requires_
 - [winetricks](https://github.com/Winetricks/winetricks)
 
 _Recommended runners_
-- [Ackurus](https://github.com/Ackurus/wine/releases/tag/lutris-6.4-sc)
+- [snatella](https://github.com/snatella/wine-runner-sc/releases/tag/wine-v6.6)
 - [wine-sc-lug](https://github.com/gort818/wine-sc-lug/releases/tag/6.11)
+- [Ackurus](https://github.com/Ackurus/wine/releases/tag/lutris-6.4-sc)
 
 ## Highlights
 
