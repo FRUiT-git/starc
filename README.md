@@ -1,6 +1,7 @@
 # starc
 Cloud Imperium Games Star Citizen launcher script
 
+Updated 3.13
 This script is intended to run Star Citizen using the less possible user knowledge and interaction.
 
 _This script requires_
