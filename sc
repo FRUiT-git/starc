@@ -332,8 +332,6 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 [ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor suspend >/dev/null 2>&1
 
 # Finally, launch the game
-#echo $gmr
-#echo $mango
 [ "$DEBUG" ] || {
   $cmd "$WINE" "$game" $_scarg >> "$logfile" 2>&1
 }
