@@ -18,7 +18,9 @@ The script can toggle various linux / nividia / wine options to help adjusting t
 - Enable Mango HUD
 
 ### Prefix creation
-If the mentioned prefix path doesn't exist, it is configured and the two required verbs 'arial' and 'dxvk' are installed automatically. Then a game installation is attempted, if the user described their game install path, or ultimately if some game install is found within the $HOME folder. If the prefix path is not provided, the following default location is used : `$HOME/Games/starcitizen`
+If the mentioned prefix path doesn't exist, it is configured and the two required verbs 'arial' and 'dxvk' are installed automatically. Then a game installation is attempted, if the user described their game install path, or ultimately if some game install is found within the $HOME folder.
+
+If the prefix path is not provided, the following default location is used : `$HOME/Games/starcitizen`
 
 ### Knowledge
 The configuration part in the beginning of the script has been highly commented and documented, with links to the tools and helpers involved, and some short descriptions.
