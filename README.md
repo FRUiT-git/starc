@@ -40,7 +40,7 @@ In case the user hasn't provided a runner's path, the script is trying to use th
 
 
 ## Command line parameters
-In order to ease the use of runners / wine vars, the script accepts a few parameters to enable things during the game's launching. The benefit of this is to ensure that the wine tools are launched using the runner's binaries.
+In order to ease the use of runners / wine vars, the script accepts a few parameters to enable things during the game's launching. The benefit of this is to ensure that the wine tools are launched using the runner's binaries (as opposed to vanilla wine).
 
 ```
 > sc -c
@@ -64,7 +64,7 @@ This parameter removes all cached files and shader from :
 ```
 > sc -i "list of winetricks verbs"
 ```
-There's more than one way to add some verbs to the wine's prefix with this script. With this parameter any winetricks verb can be installed on the fly.
+There's more than one way to add some verbs to the wine's prefix with this script. With this parameter any additional winetricks verb can be installed on the fly.
 
 Example : `sc -i "corefonts"`
           `sc -i "vcrun2019 win10 vlc mspaint"`
