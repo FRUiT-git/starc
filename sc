@@ -45,6 +45,7 @@ _scdxc=
 _scvkb=
 
 # [Optional] DXVK state and OpenGL shader cache path
+# Usefull if cache needs to be stored on another (external) drive
 # If not set, a default cache path is created inside prefix folder
 # i.e. "/path/to/cache"
 _scglc=
@@ -67,18 +68,24 @@ _scarg="--use-gl=osmesa"
 #
 
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
+# Parse and format output messages through a fancy bus
 # https://github.com/FRUiT-git/putf
 USEPUTF=
 
 # Enable/disable Feral Game Mode
+# Optimise Linux system performance on demand 
 # https://github.com/FeralInteractive/gamemode
 USEGMR=
 
 # Enable/disable Mango Hud
+# A Vulkan and OpenGL overlay for monitoring FPS, temperatures,
+# CPU/GPU load and more
 # https://github.com/flightlessmango/MangoHud
-USEMANGO=
+USEMGO=
 
 # Enable/disable VKBasalt
+# vkBasalt is a Vulkan post processing layer to enhance the visual
+# graphics of games
 # https://github.com/DadSchoorse/vkBasalt
 BASALT=
 
@@ -86,7 +93,8 @@ BASALT=
 # If not set, value defaults to 0
 USETOPT=
 
-# DXVK log level (set to none may fasten execution by reducing disk I/O)
+# DXVK log level
+# Set to none may fasten execution by reducing disk I/O)
 # If not set, value defaults to 'none'
 # Values: none|error|warn|info|debug
 DXVKLL=
@@ -125,10 +133,16 @@ COMPOS=
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
 
 # Procedure parsing useful information on screen
-inf () { [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1" ; }
+inf () {
+  [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || \
+  printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1" ;
+}
 
 # Procedure handling fatal errors
-err () { [ "$p" ] && $p -e "$2" "$1" 1>&2 || printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2 ; exit $1 ; }
+err () {
+  [ "$p" ] && $p -e "$2" "$1" 1>&2 || \
+  printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2 ; exit $1 ;
+}
 
 # Procedure converting an amount of seconds (duration) in the format HH:MM
 _hm () {
@@ -144,28 +158,30 @@ Usage: ${0##*/} [OPTION]
     Star Citizen launcher script
     
 Options:
-    -c      Launch 'winecfg' during startup
-    -p      Launch wine control panel during startup
-    -r      Delete ALL cached files (game + dxvk + opengl)
-    -h      Show this help
+    -i=LIST   Install the quoted LIST of verbs in prefix with winetricks
+    -c        Launch 'winecfg' during startup
+    -p        Launch wine control panel during startup
+    -r        Purge ALL cached files (game + dxvk + opengl)
+    -h        Show this help
 EOF
   exit 0
 }
 
 # Process command line arguments
-[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhd" a; do case $a in
-  h) synopsis         ;;
-  c) wine_cfg='true'  ;;
-  p) wine_cpl='true'  ;;
-  r) rm_cache='true'  ;;
-  d) DEBUG=1          ;;
+[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:" a; do case $a in
+  h) synopsis                               ;;
+  c) wine_cfg='true'                        ;;
+  p) wine_cpl='true'                        ;;
+  r) rm_cache='true'                        ;;
+  i) _scwtt="${OPTARG}${_scwtt:+ $_scwtt}"  ;;
+  d) DEBUG=1                                ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
 
 # Sanity check
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
 
 # Wine prefix path settings
-mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}"
+mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err 2 "Unable to find/create prefix"
 inf "$WINEPREFIX [prefix]" "wine" 35
 
 # Define path to script output (shell log)
@@ -178,17 +194,22 @@ runr="${_scrun##*/}"
 inf "Runners repository: ${rdep:-not found}" "wine"
 
 # Specify the wine runner executable and perform a sanity check
-wine=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
-rbin="${wine%/*}"
-inf "Runner: ${runr:-$wine}" "wine"
-inf "Version: $($wine --version)" "wine"
+WINE=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
+rbin="${WINE%/*}"
+WINESERVER=$(readlink -e "$rbin/wineserver")
+inf "Runner: ${runr:-$WINE}" "wine"
+inf "Server: $WINESERVER" "wine"
+inf "Version: $($WINE --version)" "wine"
 
 # Specify some wine environment variables. Link to runner directories
-WINELOADER="$wine"
+WINELOADER="$WINE"
 WINEDLLOVERRIDES="dxgi=b,n"
 WINEDEBUG=-all
 WINEDLLPATH=$(readlink -e "${rbin%/*}/lib64/wine" || readlink -e "${rbin%/*}/lib/wine")
 inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
+
+# Eventually include wine runner bin directory into system PATH
+case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
 
 # Configure prefix
 [ -f "$WINEPREFIX/system.reg" ] || {
@@ -198,16 +219,16 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
   _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
 }
 for t in $_scwtt; do
-  grep -q "$t" $WINEPREFIX/winetricks.log 2>/dev/null || {
-    inf "Installing $t [winetricks]" "conf" 31
-    winetricks $t >> "$logfile" 2>&1 && wineserver -w || inf "Failed" "122" 31
+  grep -q -e "$t" $WINEPREFIX/winetricks.log 2>/dev/null || {
+    inf "Installing « $t » [winetricks]" "conf" 31
+    winetricks $t >> "$logfile" 2>&1 && $WINESERVER -w || inf "Failed" "122" 31
   }
 done
 
 # Launch wine configuration tools depending on command line parameters
 [ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
-[ "$wine_cpl" ] && "$wine" control >> "$logfile" 2>&1
+[ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
 
 # Store the Robert Space Industries and Star Citizen LIVE locations
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
@@ -224,11 +245,11 @@ _scins=$(readlink -e "$_scins")
 [ -f "$game" ] || {
   [ ! -f "$_scins" ] && inf "Game installation not found" "conf" 31 || {
     inf "Starting game installation ${_scins##*/}" "conf" 31
-    "$wine" "$_scins" >> "$logfile" 2>&1 && {
+    "$WINE" "$_scins" >> "$logfile" 2>&1 && {
       inf "${_scins##*/} has been installed succesfully" "conf" 31
-      sleep 1 ; pkill "RSI" >/dev/null 2>&1
+      sleep 1 ; pkill RSI >/dev/null 2>&1
       inf "Waiting for processes to end" "conf" 31
-      wineserver -w
+      $WINESERVER -k
     } || inf "Installation aborted or failed" "conf" 31
   }
 }
@@ -236,7 +257,7 @@ _scins=$(readlink -e "$_scins")
 # Change executable, depending on login infos file existance (loginData.json)
 # User must capture this file during game's execution and copy it back
 # in the ../StarCitizen/LIVE directory after the launcher closed
-[ -f "$sclp/loginData.json" ] && game="$sclp/Bin64/StarCitizen.exe"
+[ -f "$sclp/loginData.json" -a -f "$sclp/Bin64/StarCitizen.exe" ] && game="$sclp/Bin64/StarCitizen.exe"
 
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found inside prefix" "game" || err 2 "Game executable not found"
@@ -248,7 +269,7 @@ mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
 [ "$rm_cache" ] && {
   rm -rfv "$sclp/USER/Client/0/shaders"/* >> "$logfile" 2>&1
   rm -rfv "$cache"/* >> "logfile" 2>&1
-  inf "Wiped all (shader)cache files" "game" 31
+  inf "Wiped all cache files" "conf" 31
 }
 
 # Specify where to put the DXVK cache file
@@ -270,35 +291,33 @@ inf "${DXVK_CONFIG_FILE:-Configuration file not found}" "dxvk"
 VK_ICD_FILENAMES=$(readlink -e "${_scicd}")
 inf "${VK_ICD_FILENAMES:-ICD configuration file not found}" "dxvk"
 
-# Define DXVK log level
+# DXVK log level
 inf "Log level [dxvk]" "${DXVK_LOG_LEVEL:=${DXVKLL:-none}}"
 
 # Whether or not DXVK should use ASYNC
 inf "Async [dxvk]" "${DXVK_ASYNC:=${DXVKAS:-0}}"
 
-# Specify where's the VKBasalt configuration file
+# Define the VKBasalt config file path
+VKBASALT_LOG_LEVEL="none"
 VKBASALT_CONFIG_FILE=$(readlink -e ${_scvkb:-"$WINEPREFIX/vkbasalt.conf"})
 inf "Config file: ${VKBASALT_CONFIG_FILE:-not found} [vkbasalt]" "${ENABLE_VKBASALT:=${BASALT:-0}}"
 
 # Whether or not wine ESYNC and FSYNC should be enabled
 isfsync=$(\ls /sys/kernel | grep "futex")
 [ "$isfsync" ] && [ "${WINEFSYNC:-0}" = "1" ] && unset WINEESYNC
-inf "Wine E-sync" "${WINEESYNC:=0}"
 [ "$isfsync" ] || unset WINEFSYNC
+inf "Wine E-sync" "${WINEESYNC:=0}"
 inf "Wine F-sync (${isfsync:-disabled})" "${WINEFSYNC:=0}"
 
-# Eventually include wine runner bin directory into system PATH
-case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
-
 # Lookup Feral Game Mode
-gmr="$(which gamemoderun)"
+gmr="$(which gamemoderun)" || unset USEGMR
 [ ! "${USEGMR:-0}" = "0" ] && cmd="$gmr"
 inf "Feral Game Mode: ${gmr:-not found}" "${USEGMR:=0}"
 
 # Lookup Mango HUD
-mango="$(which mangohud)"
-[ ! "${USEMANGO:-0}" = "0" ] && cmd="${cmd:+$cmd${mango:+ }}${mango}"
-inf "Mango: ${mango:-not found}" "${USEMANGO:=0}"
+mango="$(which mangohud)" || unset USEMGO
+[ ! "${USEMGO:-0}" = "0" ] && cmd="${cmd:+$cmd${mango:+ }}${mango}"
+inf "Mango: ${mango:-not found}" "${USEMGO:=0}"
 
 # Store initial date/time for game uptime calculation
 st=$(date +%s)
@@ -313,8 +332,10 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 [ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor suspend >/dev/null 2>&1
 
 # Finally, launch the game
+#echo $gmr
+#echo $mango
 [ "$DEBUG" ] || {
-  $cmd "$wine" "$game" $_scarg >> "$logfile" 2>&1
+  $cmd "$WINE" "$game" $_scarg >> "$logfile" 2>&1
 }
 
 # Re-enable Kwin's Compositor if it has been disabled
@@ -327,4 +348,7 @@ _hm $(( $(date +%s) - $st ))
 [ "$gmr" ] && {
   ( sleep 10 ; pkill gamemoded 2>/dev/null ; ) &
 }
+
+# Bye bye
+exit 0
 
