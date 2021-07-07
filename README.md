@@ -6,14 +6,14 @@ This script is intended to run Star Citizen using the less possible user knowled
 _This script requires_
 - [winetricks](https://github.com/Winetricks/winetricks)
 
-Recommended runners
+_Recommended runners_
 - [Ackurus](https://github.com/Ackurus/wine/releases/tag/lutris-6.4-sc)
 - [wine-sc-lug](https://github.com/gort818/wine-sc-lug/releases/tag/6.11)
 
 ## Highlights
 
 ### Basic configuration
-While this script could potentially run 'as is', as long as the user downloaded the **RSI-Setup-x.x.xx.exe** somewhere in their home, it is recommended to edit it and fill a few vars in the configuration part. The most important being the prefix path, the game's installation path and the runner path.
+While this script could potentially run 'as is', as long as the user downloaded the **RSI-Setup-x.x.xx.exe** somewhere in their home, it is recommended to edit it and fill a few vars in the configuration part. The most important being the **prefix path**, the **game's installation path** and the **runner path**.
 
 This script can run from wherever. Preferably put it somewhere in your $PATH.
 
