@@ -39,7 +39,7 @@ This parameter launches the wine configuration window (wine_cfg) using the runne
 > sc -p
 ```
 This parameter launches the wine's control panel (control.exe) using the runner's wine binary.
-This is usefull for configuring joysticks in wine befaore playing the game.
+This is usefull for configuring joysticks in wine before playing the game.
 
 ```
 > sc -r
