@@ -184,16 +184,23 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err 2 "Unable to find/create prefix"
 inf "$WINEPREFIX [prefix]" "wine" 35
 
+# Check kernel map count
+vmc=$(cat /proc/sys/vm/max_map_count 2>/dev/null)
+[ ${vmc:-16777216} -ge 16777216 ] || {
+  inf "Value too low vm.max_map_count = $vmc (recommended 16777216)" "conf" 31
+  inf "https://stackoverflow.com/questions/42889241" "conf" 31
+}
+
 # Define path to script output (shell log)
 > "${logfile:=$WINEPREFIX/sc-last.log}"
 
-# Specify the wine runner bin directory
+# Specify the runner bin directory
 rbin=$(readlink -e "${_scrun:-/usr}/bin")
 rdep="${_scrun%/*}"
 runr="${_scrun##*/}"
 inf "Runners repository: ${rdep:-not found}" "wine"
 
-# Specify the wine runner executable and perform a sanity check
+# Specify the runner executable and perform a sanity check
 WINE=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
 rbin="${WINE%/*}"
 WINESERVER=$(readlink -e "$rbin/wineserver")
