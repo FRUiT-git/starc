@@ -3,7 +3,7 @@ Cloud Imperium Games Star Citizen launcher script
 
 This script is intended to run Star Citizen using the less possible user knowledge and interaction.
 
-This script requires
+__This script requires__
 - [winetricks](https://github.com/Winetricks/winetricks)
 
 Recommended runners
