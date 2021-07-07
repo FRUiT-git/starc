@@ -6,6 +6,10 @@ This script is intended to run Star Citizen using the less possible user knowled
 This script requires
 - [winetricks](https://github.com/Winetricks/winetricks)
 
+Recommended runners
+- [Ackurus](https://github.com/Ackurus/wine/releases/tag/lutris-6.4-sc)
+- [wine-sc-lug](https://github.com/gort818/wine-sc-lug/releases/tag/6.11)
+
 ## Highlights
 
 ### Configuration
