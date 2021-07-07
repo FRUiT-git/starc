@@ -68,3 +68,9 @@ There's more than one way to add some verbs to the wine's prefix with this scrip
 
 Examples : `sc -i "corefonts"`
            `sc -i "vcrun2019 win10 vlc mspaint"`
+
+## Useful links and documentation
+
+### LUG Helper
+[LUG-Helper](https://github.com/the-sane/lug-helper) Star Citizen's Linux Users Group Helper Script 
+
