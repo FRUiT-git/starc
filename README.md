@@ -66,5 +66,5 @@ This parameter removes all cached files and shader from :
 ```
 There's more than one way to add some verbs to the wine's prefix with this script. With this parameter any additional winetricks verb can be installed on the fly.
 
-Example : `sc -i "corefonts"`
-          `sc -i "vcrun2019 win10 vlc mspaint"`
+Examples : `sc -i "corefonts"`
+           `sc -i "vcrun2019 win10 vlc mspaint"`
