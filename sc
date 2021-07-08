@@ -121,6 +121,13 @@ WINEESYNC=
 # If not set, value defaults to 0
 WINEFSYNC=
 
+# Disable loginData.json capture
+# By default, script tries to capture this file to allow to
+# bypass the launcher and start the game directly
+# Set this to 1 prevents this behavior to always start the game
+# through the launcher
+DNC=
+
 # Enable/disable Kwin Compositor
 # If not set or set to 0, disable compositing
 COMPOS=
@@ -128,6 +135,10 @@ COMPOS=
 #################################################################
 # DO NOT EDIT BELOW THIS LINE                                   #
 #################################################################
+
+# Version
+maj=0
+min=3
 
 # Lookup putf
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
@@ -150,26 +161,34 @@ _hm () {
   inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time"
 }
 
+version () {
+  cat <<EOF
+${0##*/}, version $maj.$min
+EOF
+  exit 0
+}
+
 # Output command line parameters settings
 synopsis () {
   cat <<EOF
-  
 Usage: ${0##*/} [OPTION]
-    Star Citizen launcher script
+    Star Citizen launcher script version $maj.$min
     
 Options:
-    -i=LIST   Install the quoted LIST of verbs in prefix with winetricks
+    -i=LIST   Install the quoted LIST of verbs with winetricks
     -c        Launch 'winecfg' during startup
     -p        Launch wine control panel during startup
     -r        Purge ALL cached files (game + dxvk + opengl)
+    -v        Show version
     -h        Show this help
 EOF
   exit 0
 }
 
 # Process command line arguments
-[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:" a; do case $a in
+[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:v" a; do case $a in
   h) synopsis                               ;;
+  v) version                                ;;
   c) wine_cfg='true'                        ;;
   p) wine_cpl='true'                        ;;
   r) rm_cache='true'                        ;;
@@ -183,6 +202,9 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 # Wine prefix path settings
 mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err 2 "Unable to find/create prefix"
 inf "$WINEPREFIX [prefix]" "wine" 35
+
+# Check winetricks
+WT=$(which winetricks) || inf "Winetricks not found" "conf" 31
 
 # Check kernel map count
 vmc=$(cat /proc/sys/vm/max_map_count 2>/dev/null)
@@ -226,8 +248,8 @@ case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
   _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
 }
 for t in $_scwtt; do
-  grep -q -e "$t" $WINEPREFIX/winetricks.log 2>/dev/null || {
-    inf "Installing « $t » [winetricks]" "conf" 31
+  grep -q -e "$t" "$WINEPREFIX"/winetricks.log 2>/dev/null || {
+    inf "Installing « $t » ${WT:+[winetricks]}" "conf" 31
     winetricks $t >> "$logfile" 2>&1 && $WINESERVER -w || inf "Failed" "122" 31
   }
 done
@@ -237,7 +259,7 @@ done
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
 
-# Store the Robert Space Industries and Star Citizen LIVE locations
+# Store the Roberts Space Industries and Star Citizen LIVE locations
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
 sclp="$rsip/StarCitizen/LIVE"
 
@@ -246,11 +268,11 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 
 # Ultimately try to search $HOME if installation path is not set
 _scins=$(readlink -e "$_scins")
-: ${_scins:="$(find $HOME -name "*RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
+: ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
 
 # If game is not installed, try to launch installation
 [ -f "$game" ] || {
-  [ ! -f "$_scins" ] && inf "Game installation not found" "conf" 31 || {
+  [ ! -f "$_scins" ] && inf "Game installation not found" "2" 31 || {
     inf "Starting game installation ${_scins##*/}" "conf" 31
     "$WINE" "$_scins" >> "$logfile" 2>&1 && {
       inf "${_scins##*/} has been installed succesfully" "conf" 31
@@ -262,9 +284,21 @@ _scins=$(readlink -e "$_scins")
 }
 
 # Change executable, depending on login infos file existance (loginData.json)
-# User must capture this file during game's execution and copy it back
-# in the ../StarCitizen/LIVE directory after the launcher closed
-[ -f "$sclp/loginData.json" -a -f "$sclp/Bin64/StarCitizen.exe" ] && game="$sclp/Bin64/StarCitizen.exe"
+ldata="$sclp/loginData.json"
+[ "${DNC:-0}" = "1" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
+[ ! "${DNC:-0}" = "1" ] && {
+  [ -f "$ldata" -a -f "$sclp/Bin64/StarCitizen.exe" ] && game="$sclp/Bin64/StarCitizen.exe"
+  [ -f "$sclp/Bin64/StarCitizen.exe" ] && [ ! -f "$ldata" ] && {
+    (
+      sleep 300
+      [ -f "$ldata" ] && chmod 444 "$ldata" 2>/dev/null && {
+        inf "${ldata##*/} has been locked" "conf" 31
+        perm=$(find "$sclp" -name "${ldata##*/}" -printf "%m" 2>/dev/null)
+        inf "Permissions" "$perm" 31
+      }
+    ) &
+  }
+}
 
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found inside prefix" "game" || err 2 "Game executable not found"
@@ -329,9 +363,8 @@ inf "Mango: ${mango:-not found}" "${USEMGO:=0}"
 # Store initial date/time for game uptime calculation
 st=$(date +%s)
 
-# Output log path and time, everything went good so far :)
+# Output log path, everything went good so far :)
 inf "$logfile" "log"
-inf "Launching Star Citizen at $(date +%R)" "game"
 
 # Disable Kwin's Compositor
 kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
@@ -340,6 +373,7 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 
 # Finally, launch the game
 [ "$DEBUG" ] || {
+  inf "Launching Star Citizen at $(date +%R)" "game"
   $gmr${mango:+${gmr:+ }$mango} "$WINE" "$game" $_scarg >> "$logfile" 2>&1
 }
 
@@ -347,13 +381,14 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 [ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor resume >/dev/null 2>&1
 
 # Game uptime calculation
-_hm $(( $(date +%s) - $st ))
+[ "$DEBUG" ] || _hm $(( $(date +%s) - $st ))
 
 # Daemon to kill Feral Game Mode a few seconds after script gave hand back to shell
-[ "$gmr" ] && {
+[ "$gmr" ] && [ ! "$DEBUG" ] && {
   ( sleep 10 ; pkill gamemoded 2>/dev/null ; ) &
 }
 
 # Bye bye
 exit 0
+
 
