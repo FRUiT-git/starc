@@ -146,13 +146,14 @@ min=3
 # Procedure parsing useful information on screen
 inf () {
   [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || \
-  printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1" ;
+  printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1"
 }
 
 # Procedure handling fatal errors
 err () {
   [ "$p" ] && $p -e "$2" "$1" 1>&2 || \
-  printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2 ; exit $1 ;
+  printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2
+  exit $1
 }
 
 # Procedure converting an amount of seconds (duration) in the format HH:MM
@@ -237,7 +238,7 @@ WINEDEBUG=-all
 WINEDLLPATH=$(readlink -e "${rbin%/*}/lib64/wine" || readlink -e "${rbin%/*}/lib/wine")
 inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 
-# Eventually include wine runner bin directory into system PATH
+# Eventually include runner bin directory into system PATH
 case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
 
 # Configure prefix
@@ -266,12 +267,10 @@ sclp="$rsip/StarCitizen/LIVE"
 # Set game path
 game="$rsip/RSI Launcher/RSI Launcher.exe"
 
-# Ultimately try to search $HOME if installation path is not set
-_scins=$(readlink -e "$_scins")
-: ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
-
 # If game is not installed, try to launch installation
 [ -f "$game" ] || {
+  _scins=$(readlink -e "$_scins")
+  : ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
   [ ! -f "$_scins" ] && inf "Game installation not found" "2" 31 || {
     inf "Starting game installation ${_scins##*/}" "conf" 31
     "$WINE" "$_scins" >> "$logfile" 2>&1 && {
@@ -283,10 +282,10 @@ _scins=$(readlink -e "$_scins")
   }
 }
 
-# Change executable, depending on login infos file existance (loginData.json)
+# Switch executable, depending on login infos file existance (loginData.json)
 ldata="$sclp/loginData.json"
 [ "${DNC:-0}" = "1" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
-[ ! "${DNC:-0}" = "1" ] && {
+[ "${DNC:-0}" = "1" ] || {
   [ -f "$ldata" -a -f "$sclp/Bin64/StarCitizen.exe" ] && game="$sclp/Bin64/StarCitizen.exe"
   [ -f "$sclp/Bin64/StarCitizen.exe" ] && [ ! -f "$ldata" ] && {
     (
@@ -390,5 +389,4 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 
 # Bye bye
 exit 0
-
 
