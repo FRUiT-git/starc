@@ -45,12 +45,12 @@ In order to ease the use of runners / wine vars, the script accepts a few parame
 ```
 > sc -c
 ```
-This parameter launches the wine configuration window (**wine_cfg**) using the runner's wine binary.
+This parameter launches the wine configuration window (**wine_cfg**) using the runner's binary.
 
 ```
 > sc -p
 ```
-This parameter launches the wine's control panel (**control.exe**) using the runner's wine binary.
+This parameter launches the wine's control panel (**control.exe**) using the runner's binary.
 This is usefull for configuring joysticks in wine before playing the game.
 
 ```
