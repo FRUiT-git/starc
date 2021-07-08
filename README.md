@@ -14,7 +14,7 @@ _Recommended runners_
 ## Highlights
 
 ### Basic configuration
-While this script could potentially run 'as is', as long as the user downloaded the file **RSI-Setup-x.x.xx.exe** somewhere in their home, it is recommended to edit it and fill a few vars in the configuration part. The most important being the **prefix path**, the **game's installation path** and the **runner path**.
+While the script could potentially run 'as is', as long as the user downloaded the file **RSI-Setup-x.x.xx.exe** somewhere in their home, it is recommended to edit it and fill a few vars in the configuration part. The most important being the **prefix path**, the **game's installation path** and the **runner path**.
 
 This script can run from wherever. Preferably put it somewhere in your $PATH.
 
