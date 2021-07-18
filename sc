@@ -138,7 +138,7 @@ COMPOS=
 
 # Version
 maj=0
-min=3
+min=2
 
 # Lookup putf
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
@@ -162,6 +162,7 @@ _hm () {
   inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time"
 }
 
+# Output script version
 version () {
   cat <<EOF
 ${0##*/}, version $maj.$min
@@ -177,8 +178,8 @@ Usage: ${0##*/} [OPTION]
     
 Options:
     -i=LIST   Install the quoted LIST of verbs with winetricks
-    -c        Launch 'winecfg' during startup
-    -p        Launch wine control panel during startup
+    -c        Launch 'winecfg'
+    -p        Launch wine control panel
     -r        Purge ALL cached files (game + dxvk + opengl)
     -v        Show version
     -h        Show this help
@@ -218,7 +219,8 @@ vmc=$(cat /proc/sys/vm/max_map_count 2>/dev/null)
 > "${logfile:=$WINEPREFIX/sc-last.log}"
 
 # Specify the runner bin directory
-rbin=$(readlink -e "${_scrun:-/usr}/bin")
+_scrun=$(readlink -e "$_scrun")
+rbin="${_scrun:-/usr}/bin"
 rdep="${_scrun%/*}"
 runr="${_scrun##*/}"
 inf "Runners repository: ${rdep:-not found}" "wine"
@@ -284,10 +286,11 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 
 # Switch executable, depending on login infos file existance (loginData.json)
 ldata="$sclp/loginData.json"
+scexe="$sclp/Bin64/StarCitizen.exe"
 [ "${DNC:-0}" = "1" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
 [ "${DNC:-0}" = "1" ] || {
-  [ -f "$ldata" -a -f "$sclp/Bin64/StarCitizen.exe" ] && game="$sclp/Bin64/StarCitizen.exe"
-  [ -f "$sclp/Bin64/StarCitizen.exe" ] && [ ! -f "$ldata" ] && {
+  [ -f "$ldata" -a -f "$scexe" ] && game="$scexe"
+  [ -f "$scexe" ] && [ ! -f "$ldata" ] && {
     (
       sleep 300
       [ -f "$ldata" ] && chmod 444 "$ldata" 2>/dev/null && {
@@ -324,7 +327,7 @@ __GL_SHADER_DISK_CACHE_SIZE=17179869184
 inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
 
 # Define the DXVK config file path
-DXVK_CONFIG_FILE=$(readlink -e ${_scdxc:-"$HOME/.dxvk/dxvk.conf"})
+DXVK_CONFIG_FILE=$(readlink -e "${_scdxc:-$HOME/.dxvk/dxvk.conf}")
 inf "${DXVK_CONFIG_FILE:-Configuration file not found}" "dxvk"
 
 # Define the vulkan ICD config file path
@@ -339,7 +342,7 @@ inf "Async [dxvk]" "${DXVK_ASYNC:=${DXVKAS:-0}}"
 
 # Define the VKBasalt config file path
 VKBASALT_LOG_LEVEL="none"
-VKBASALT_CONFIG_FILE=$(readlink -e ${_scvkb:-"$WINEPREFIX/vkbasalt.conf"})
+VKBASALT_CONFIG_FILE=$(readlink -e "${_scvkb:-$WINEPREFIX/vkbasalt.conf}")
 inf "Config file: ${VKBASALT_CONFIG_FILE:-not found} [vkbasalt]" "${ENABLE_VKBASALT:=${BASALT:-0}}"
 
 # Whether or not wine ESYNC and FSYNC should be enabled
