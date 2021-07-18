@@ -30,6 +30,15 @@ The script can toggle various linux / nividia / wine options to help adjusting t
 ### Prefix creation
 If the mentioned prefix path doesn't exist, it is configured and the two required verbs 'arial' and 'dxvk' are installed automatically using winetricks. Then a game installation is attempted, if the user described their game install path, or ultimately if some game install is found within the $HOME folder.
 
+It is also possible to override the prefix settings with the `WINEPREFIX` environment variable. i.e.
+```
+> WINEPREFIX="/path/to/my/prefix" sc
+```
+```
+> export WINEPREFIX="/path/to/my/prefix"
+> sc
+```
+
 If the prefix path is not provided, the following default location is used : `$HOME/Games/starcitizen`
 
 ### Knowledge
