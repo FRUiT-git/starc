@@ -248,7 +248,7 @@ _scrun=$(readlink -e "$_scrun")
 rbin="${_scrun:-/usr}/bin"
 rdep="${_scrun%/*}"
 runr="${_scrun##*/}"
-[ "$VERB" ] && inf "Runners repository: ${rdep:-not found}" "wine"
+inf "Runners repository: ${rdep:-not found}" "wine"
 
 # Specify the runner executable and perform a sanity check
 WINE=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
