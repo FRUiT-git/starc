@@ -18,7 +18,7 @@ _scins=
 # [Optional] Game prefix
 # Path to the wine prefix folder where Star Citizen is installed
 # If prefix doesn't exist, it is created and configured
-# If not set, script will use the default location below
+# If not set, script uses the default location below
 # i.e. "$HOME/Games/starcitizen"
 _scpre=
 
@@ -50,8 +50,8 @@ _scvkb=
 # i.e. "/path/to/cache"
 _scglc=
 
-# [Optional] Winetricks tools
-# List of addons Winetricks should add to a new prefix in addition
+# [Optional] Winetricks verbs
+# List of verbs Winetricks should install in a new prefix in addition
 # to the required arial and dxvk, separated by spaces
 # Script looks up at start and installs any new verb found here
 # i.e. "vcrun2019 corefonts win10"
@@ -78,7 +78,7 @@ USEPTU=
 USEPUTF=
 
 # Enable/disable Feral Game Mode
-# Optimise Linux system performance on demand 
+# Optimise Linux system performance on demand
 # https://github.com/FeralInteractive/gamemode
 USEGMR=
 
@@ -144,9 +144,9 @@ COMPOS=
 # NOTE: The important messages still always show
 VERB=1
 
-#################################################################
-# DO NOT EDIT BELOW THIS LINE                                   #
-#################################################################
+######################################################################
+# DO NOT EDIT BELOW THIS LINE                                        #
+######################################################################
 
 # Version
 maj=0
@@ -227,11 +227,8 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err 2 "Unable to find/create prefix"
 inf "Prefix: $WINEPREFIX" "wine" 35
 
-# Use PTU or LIVE
-[ "${USEPTU:-0}" != "0" ] && BRANCH="PTU" || BRANCH="LIVE"
-
 # Check winetricks
-WT=$(which winetricks) || inf "Winetricks not found" "conf" 31
+which winetricks >/dev/null 2>&1 || inf "Winetricks not found" "conf" 31
 
 # Check kernel map count
 vmc=$(cat /proc/sys/vm/max_map_count 2>/dev/null)
@@ -246,9 +243,7 @@ vmc=$(cat /proc/sys/vm/max_map_count 2>/dev/null)
 # Specify the runner bin directory
 _scrun=$(readlink -e "$_scrun")
 rbin="${_scrun:-/usr}/bin"
-rdep="${_scrun%/*}"
 runr="${_scrun##*/}"
-inf "Runners repository: ${rdep:-not found}" "wine"
 
 # Specify the runner executable and perform a sanity check
 WINE=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
@@ -259,10 +254,10 @@ inf "Server: $WINESERVER" "wine"
 inf "Version: $($WINE --version)" "wine"
 
 
-# Specify some wine environment variables. Link to runner directories
+# Specify wine environment variables. Link to runner directories
 WINELOADER="$WINE"
 WINEDLLOVERRIDES="dxgi=b,n"
-WINEDEBUG=-all
+WINEDEBUG="-all"
 WINEDLLPATH=$(readlink -e "${rbin%/*}/lib64/wine" || readlink -e "${rbin%/*}/lib/wine")
 inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 
@@ -276,10 +271,10 @@ case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
   inf "Configuring the new prefix, please wait" "conf" 31
   _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
 }
-for t in $_scwtt; do
-  grep -q -e "$t" "$WINEPREFIX"/winetricks.log 2>/dev/null || {
-    inf "Installing « $t »" "conf" 31
-    winetricks $t >> "$logfile" 2>&1 && $WINESERVER -w || inf "Failed" "122" 31
+for verb in $_scwtt; do
+  grep -q -e "$verb" "$WINEPREFIX"/winetricks.log 2>/dev/null || {
+    inf "Installing « $verb »" "conf" 31
+    winetricks $verb >> "$logfile" 2>&1 && $WINESERVER -w || inf "Failed" "122" 31
   }
 done
 
@@ -288,6 +283,9 @@ done
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
 
+# Use PTU or LIVE
+[ "${USEPTU:-0}" != "0" ] && BRANCH="PTU"
+
 # Store the Roberts Space Industries and Star Citizen LIVE/PTU locations
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
 sclp="$rsip/StarCitizen/${BRANCH:-LIVE}"
@@ -295,16 +293,15 @@ sclp="$rsip/StarCitizen/${BRANCH:-LIVE}"
 # Set game path
 game="$rsip/RSI Launcher/RSI Launcher.exe"
 
-# If game is not installed, try to launch installation
+# If launcher is not installed, try to run installation
 [ -f "$game" ] || {
   _scins=$(readlink -e "$_scins")
   : ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
   [ ! -f "$_scins" ] && inf "Game installation not found" "2" 31 || {
-    inf "Starting game installation ${_scins##*/}" "conf" 31
+    inf "Executing ${_scins##*/}" "conf" 31
     "$WINE" "$_scins" >> "$logfile" 2>&1 && {
       inf "${_scins##*/} has been installed succesfully" "conf" 31
       sleep 1 ; pkill RSI >/dev/null 2>&1
-      inf "Waiting for processes to end" "conf" 31
       $WINESERVER -k
     } || inf "Installation aborted or failed" "conf" 31
   }
@@ -316,16 +313,17 @@ ldata="$sclp/loginData.json"
 scexe="$sclp/Bin64/StarCitizen.exe"
 [ "${DNC:-0}" = "1" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
 [ "${DNC:-0}" = "1" ] || {
-  [ -f "$scexe" -a -f "$ldata" ] && game="$scexe"
-  [ -f "$scexe" ] && [ ! -f "$ldata" ] && {
-    (
-      sleep 300
-      [ -f "$ldata" ] && chmod 444 "$ldata" 2>/dev/null && {
-        inf "${ldata##*/} has been locked" "conf" 31
-        perm=$(find "$sclp" -name "${ldata##*/}" -printf "%m" 2>/dev/null)
-        inf "Permissions" "$perm" 31
-      }
-    ) &
+  [ -f "$scexe" ] && {
+    [ -f "$ldata" ] && game="$scexe" || {
+      (
+        sleep 300
+        [ -f "$ldata" ] && chmod 444 "$ldata" 2>/dev/null && {
+          inf "${ldata##*/} has been locked" "conf" 31
+          perm=$(find "$sclp" -name "${ldata##*/}" -printf "%m" 2>/dev/null)
+          inf "Permissions" "$perm" 31
+        }
+      ) &
+    }
   }
 }
 
@@ -403,14 +401,14 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 
 # Finally, launch the game
 [ "$DEBUG" ] || {
-  inf "Launching Star Citizen at $(date +%R)" "game" 32
+  inf "Launching Star Citizen (${game##*/}) at $(date +%R)" "game" 32
   $gmr${mango:+${gmr:+ }$mango} "$WINE" "$game" $_scarg >> "$logfile" 2>&1
 }
 
 # Re-enable Kwin's Compositor if it has been disabled
 [ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor resume >/dev/null 2>&1
 
-# Game uptime calculation
+# Script uptime calculation
 [ "$DEBUG" ] || _hm $(( $(date +%s) - $st ))
 
 # Daemon to kill Feral Game Mode a few seconds after script gave hand back to shell
