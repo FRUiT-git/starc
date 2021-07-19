@@ -61,11 +61,16 @@ _scwtt=
 # i.e. "--use-gl=osmesa"
 _scarg="--use-gl=osmesa"
 
-# Define whether or not to launch some external tools/helpers
+# Define game options and the use of some external tools/helpers
 #
 # 0: disable
 # 1: enable
 #
+
+# Branch selection
+# Whether the PTU branch (1) should be used instead of LIVE
+# If not set, script uses the LIVE branch (0)
+USEPTU=
 
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # Parse and format output messages through a fancy bus
@@ -132,6 +137,13 @@ DNC=
 # If not set or set to 0, disable compositing
 COMPOS=
 
+# Set script default output verbosity
+# Perm toggle for the parameter -s
+# It is not recommended to disable this until being very comfy
+# about what happens
+# NOTE: The important messages still always show
+VERB=1
+
 #################################################################
 # DO NOT EDIT BELOW THIS LINE                                   #
 #################################################################
@@ -145,13 +157,16 @@ min=2
 
 # Procedure parsing useful information on screen
 inf () {
-  [ "$p" ] && $p -c ${3:-32} -L "$2" "$1" || \
-  printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1"
+  [ "${3:-$VERB}" ] && {
+    [ "$p" ] && "$p" -c ${3:-32} -L "$2" "$1" || \
+    printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1"
+  }
+  return 0
 }
 
 # Procedure handling fatal errors
 err () {
-  [ "$p" ] && $p -e "$2" "$1" 1>&2 || \
+  [ "$p" ] && "$p" -e "$2" "$1" 1>&2 || \
   printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2
   exit $1
 }
@@ -159,18 +174,18 @@ err () {
 # Procedure converting an amount of seconds (duration) in the format HH:MM
 _hm () {
   local S=$1 ; local h=$(($S%86400/3600)) ; local m=$(($S%3600/60))
-  inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time"
+  inf "Played $(printf "%02.0f:%02.0f\n" $h $m)" "time" 32
 }
 
 # Output script version
 version () {
   cat <<EOF
-${0##*/}, version $maj.$min
+${0##*/}: version $maj.$min
 EOF
   exit 0
 }
 
-# Output command line parameters settings
+# Output command line parameters options
 synopsis () {
   cat <<EOF
 Usage: ${0##*/} [OPTION]
@@ -181,6 +196,8 @@ Options:
     -c        Launch 'winecfg'
     -p        Launch wine control panel
     -r        Purge ALL cached files (game + dxvk + opengl)
+    -s        Silent mode
+    -u        Force update ../LIVE/loginData.json
     -v        Show version
     -h        Show this help
 EOF
@@ -188,22 +205,30 @@ EOF
 }
 
 # Process command line arguments
-[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:v" a; do case $a in
+[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:vsu" a; do case $a in
   h) synopsis                               ;;
   v) version                                ;;
   c) wine_cfg='true'                        ;;
   p) wine_cpl='true'                        ;;
   r) rm_cache='true'                        ;;
   i) _scwtt="${OPTARG}${_scwtt:+ $_scwtt}"  ;;
+  u) DNC=1                                  ;;
   d) DEBUG=1                                ;;
+  s) unset VERB                             ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
+
+# Check VERB
+[ "${VERB:-0}" = "0" ] && unset VERB
 
 # Sanity check
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
 
 # Wine prefix path settings
 mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err 2 "Unable to find/create prefix"
-inf "$WINEPREFIX [prefix]" "wine" 35
+inf "Prefix: $WINEPREFIX" "wine" 35
+
+# Use PTU or LIVE
+[ "${USEPTU:-0}" != "0" ] && BRANCH="PTU" || BRANCH="LIVE"
 
 # Check winetricks
 WT=$(which winetricks) || inf "Winetricks not found" "conf" 31
@@ -223,7 +248,7 @@ _scrun=$(readlink -e "$_scrun")
 rbin="${_scrun:-/usr}/bin"
 rdep="${_scrun%/*}"
 runr="${_scrun##*/}"
-inf "Runners repository: ${rdep:-not found}" "wine"
+[ "$VERB" ] && inf "Runners repository: ${rdep:-not found}" "wine"
 
 # Specify the runner executable and perform a sanity check
 WINE=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
@@ -232,6 +257,7 @@ WINESERVER=$(readlink -e "$rbin/wineserver")
 inf "Runner: ${runr:-$WINE}" "wine"
 inf "Server: $WINESERVER" "wine"
 inf "Version: $($WINE --version)" "wine"
+
 
 # Specify some wine environment variables. Link to runner directories
 WINELOADER="$WINE"
@@ -252,19 +278,19 @@ case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
 }
 for t in $_scwtt; do
   grep -q -e "$t" "$WINEPREFIX"/winetricks.log 2>/dev/null || {
-    inf "Installing « $t » ${WT:+[winetricks]}" "conf" 31
+    inf "Installing « $t »" "conf" 31
     winetricks $t >> "$logfile" 2>&1 && $WINESERVER -w || inf "Failed" "122" 31
   }
 done
 
-# Launch wine configuration tools depending on command line parameters
+# Launch wine configuration tools on demand
 [ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
 
-# Store the Roberts Space Industries and Star Citizen LIVE locations
+# Store the Roberts Space Industries and Star Citizen LIVE/PTU locations
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
-sclp="$rsip/StarCitizen/LIVE"
+sclp="$rsip/StarCitizen/${BRANCH:-LIVE}"
 
 # Set game path
 game="$rsip/RSI Launcher/RSI Launcher.exe"
@@ -285,11 +311,12 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 }
 
 # Switch executable, depending on login infos file existance (loginData.json)
+# FIXME: periodically delete $ldata
 ldata="$sclp/loginData.json"
 scexe="$sclp/Bin64/StarCitizen.exe"
 [ "${DNC:-0}" = "1" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
 [ "${DNC:-0}" = "1" ] || {
-  [ -f "$ldata" -a -f "$scexe" ] && game="$scexe"
+  [ -f "$scexe" -a -f "$ldata" ] && game="$scexe"
   [ -f "$scexe" ] && [ ! -f "$ldata" ] && {
     (
       sleep 300
@@ -304,6 +331,7 @@ scexe="$sclp/Bin64/StarCitizen.exe"
 
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found inside prefix" "game" || err 2 "Game executable not found"
+gameversion=$(grep -e "FileVersion" "$sclp/Game.log" 2>/dev/null) && inf "$gameversion" "game"
 
 # Define GL shader and DXVK state cache path, eventually create it
 mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
@@ -375,7 +403,7 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 
 # Finally, launch the game
 [ "$DEBUG" ] || {
-  inf "Launching Star Citizen at $(date +%R)" "game"
+  inf "Launching Star Citizen at $(date +%R)" "game" 32
   $gmr${mango:+${gmr:+ }$mango} "$WINE" "$game" $_scarg >> "$logfile" 2>&1
 }
 
