@@ -20,18 +20,18 @@ _scins=
 # If prefix doesn't exist, it is created and configured
 # If not set, script uses the default location below
 # i.e. "$HOME/Games/starcitizen"
-_scpre=
+_scpre="$HOME/Games/starc"
 
 # [Optional] Runner
 # Full name of the wine runner folder
 # If not set, script tries to use the default system wine executable
 # i.e. "$HOME/.local/share/lutris/runners/wine/lutris-6.10-2-x86_64"
-_scrun=
+_scrun="$HOME/.local/share/lutris/runners/wine/ackurus"
 
 # [Optional] Vulkan ICD configuration file path
 # Link to the icd vulkan descriptor depending on gfcard
 # i.e. "/usr/share/vulkan/icd.d/nvidia_icd.json"
-_scicd=
+_scicd="/usr/share/vulkan/icd.d/nvidia_icd.json"
 
 # [Optional] DXVK configuration file path
 # https://github.com/doitsujin/dxvk/wiki/Configuration
@@ -75,12 +75,12 @@ USEPTU=
 # Enable/disable 'putf' as the string parser (or use 'printf' instead)
 # Parse and format output messages through a fancy bus
 # https://github.com/FRUiT-git/putf
-USEPUTF=
+USEPUTF=1
 
 # Enable/disable Feral Game Mode
 # Optimise Linux system performance on demand
 # https://github.com/FeralInteractive/gamemode
-USEGMR=
+USEGMR=1
 
 # Enable/disable Mango Hud
 # A Vulkan and OpenGL overlay for monitoring FPS, temperatures,
@@ -118,13 +118,13 @@ USEGLC=1
 
 # Enable/disable wine ESYNC
 # If not set, value defaults to 0
-WINEESYNC=
+WINEESYNC=1
 
 # Enable/disable wine FSYNC
 # Only effects if FSYNC capable kernel and runner are installed
 # Enabling this automatically inactivates ESYNC
 # If not set, value defaults to 0
-WINEFSYNC=
+WINEFSYNC=1
 
 # Disable loginData.json capture
 # By default, script tries to capture this file to allow to
@@ -155,7 +155,7 @@ min=2
 # Lookup putf
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
 
-# Procedure parsing useful information on screen
+# Procedure parsing information on screen
 inf () {
   [ "${3:-$VERB}" ] && {
     [ "$p" ] && "$p" -c ${3:-32} -L "$2" "$1" || \
@@ -211,9 +211,9 @@ EOF
   c) wine_cfg='true'                        ;;
   p) wine_cpl='true'                        ;;
   r) rm_cache='true'                        ;;
+  u) DNC='true'                             ;;
+  d) DEBUG='true'                           ;;
   i) _scwtt="${OPTARG}${_scwtt:+ $_scwtt}"  ;;
-  u) DNC=1                                  ;;
-  d) DEBUG=1                                ;;
   s) unset VERB                             ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
 
@@ -245,20 +245,17 @@ _scrun=$(readlink -e "$_scrun")
 rbin="${_scrun:-/usr}/bin"
 runr="${_scrun##*/}"
 
-# Specify the runner executable and perform a sanity check
+# Setup runner/wine
 WINE=$(readlink -e "$rbin/wine") || err $? "Wine executable or runner path not found"
 rbin="${WINE%/*}"
-WINESERVER=$(readlink -e "$rbin/wineserver")
-inf "Runner: ${runr:-$WINE}" "wine"
-inf "Server: $WINESERVER" "wine"
-inf "Version: $($WINE --version)" "wine"
-
-
-# Specify wine environment variables. Link to runner directories
 WINELOADER="$WINE"
 WINEDLLOVERRIDES="dxgi=b,n"
 WINEDEBUG="-all"
+WINESERVER=$(readlink -e "$rbin/wineserver")
 WINEDLLPATH=$(readlink -e "${rbin%/*}/lib64/wine" || readlink -e "${rbin%/*}/lib/wine")
+inf "Runner: ${runr:-$WINE}" "wine"
+inf "Server: $WINESERVER" "wine"
+inf "Version: $($WINE --version)" "wine"
 inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 
 # Eventually include runner bin directory into system PATH
@@ -266,9 +263,9 @@ case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
 
 # Configure prefix
 [ -f "$WINEPREFIX/system.reg" ] || {
+  inf "Configuring the new prefix, please wait" "conf" 31
   wine_cfg='true'
   wine_cpl='true'
-  inf "Configuring the new prefix, please wait" "conf" 31
   _scwtt="arial dxvk${_scwtt:+ $_scwtt}"
 }
 for verb in $_scwtt; do
@@ -288,12 +285,12 @@ done
 
 # Store the Roberts Space Industries and Star Citizen LIVE/PTU locations
 rsip="$WINEPREFIX/drive_c/Program Files/Roberts Space Industries"
-sclp="$rsip/StarCitizen/${BRANCH:-LIVE}"
+sclp="$rsip/StarCitizen/${BRANCH:=LIVE}"
 
-# Set game path
+# Set launcher path
 game="$rsip/RSI Launcher/RSI Launcher.exe"
 
-# If launcher is not installed, try to run installation
+# If launcher is not installed, try to install
 [ -f "$game" ] || {
   _scins=$(readlink -e "$_scins")
   : ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
@@ -311,8 +308,8 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 # FIXME: periodically delete $ldata
 ldata="$sclp/loginData.json"
 scexe="$sclp/Bin64/StarCitizen.exe"
-[ "${DNC:-0}" = "1" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
-[ "${DNC:-0}" = "1" ] || {
+[ "${DNC:-0}" != "0" ] && [ -f "$ldata" ] && rm -rfv "$ldata" >> "$logfile" 2>&1
+[ "${DNC:-0}" != "0" ] || {
   [ -f "$scexe" ] && {
     [ -f "$ldata" ] && game="$scexe" || {
       (
@@ -329,16 +326,16 @@ scexe="$sclp/Bin64/StarCitizen.exe"
 
 # Sanity check
 [ -f "$game" ] && inf "${game##*/} found inside prefix" "game" || err 2 "Game executable not found"
-gameversion=$(grep -e "FileVersion" "$sclp/Game.log" 2>/dev/null) && inf "$gameversion" "game"
+ver=$(grep -e "FileVersion" "$sclp/Game.log" 2>/dev/null) && inf "${ver%[[:cntrl:]]} $BRANCH" "game"
 
 # Define GL shader and DXVK state cache path, eventually create it
 mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
 
-# Purge all cache files
+# Purge cache
 [ "$rm_cache" ] && {
   rm -rfv "$sclp/USER/Client/0/shaders"/* >> "$logfile" 2>&1
   rm -rfv "$cache"/* >> "logfile" 2>&1
-  inf "Wiped all cache files" "conf" 31
+  inf "Wiped all cache files from $BRANCH" "conf" 31
 }
 
 # Specify where to put the DXVK cache file
@@ -348,9 +345,6 @@ inf "State cache: ${DXVK_STATE_CACHE_PATH:=${cache:-not found}} [dxvk]" "${DXVK_
 inf "GL: Shader cache: ${__GL_SHADER_DISK_CACHE_PATH:=${cache:-not found}}" "${__GL_SHADER_DISK_CACHE:=${USEGLC:-0}}"
 __GL_SHADER_DISK_CACHE_SIZE=17179869184
 #__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=0
-
-# Whether or not threaded optimizations should be used by OpenGL
-inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
 
 # Define the DXVK config file path
 DXVK_CONFIG_FILE=$(readlink -e "${_scdxc:-$HOME/.dxvk/dxvk.conf}")
@@ -365,6 +359,9 @@ inf "Log level [dxvk]" "${DXVK_LOG_LEVEL:=${DXVKLL:-none}}"
 
 # Whether or not DXVK should use ASYNC
 inf "Async [dxvk]" "${DXVK_ASYNC:=${DXVKAS:-0}}"
+
+# Whether or not threaded optimizations should be used by OpenGL
+inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
 
 # Define the VKBasalt config file path
 VKBASALT_LOG_LEVEL="none"
@@ -391,7 +388,7 @@ inf "Mango: ${mango:-not found}" "${USEMGO:=0}"
 # Store initial date/time for game uptime calculation
 st=$(date +%s)
 
-# Output log path, everything went good so far :)
+# Output log path
 inf "$logfile" "log"
 
 # Disable Kwin's Compositor
@@ -401,8 +398,8 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 
 # Finally, launch the game
 [ "$DEBUG" ] || {
-  inf "Launching Star Citizen (${game##*/}) at $(date +%R)" "game" 32
-  $gmr${mango:+${gmr:+ }$mango} "$WINE" "$game" $_scarg >> "$logfile" 2>&1
+  inf "Launching Star Citizen (${game##*/}) at $(date +%R)" "${BRANCH}" 32
+  "$gmr"${mango:+${gmr:+ }"$mango"} "$WINE" "$game" $_scarg >> "$logfile" 2>&1
 }
 
 # Re-enable Kwin's Compositor if it has been disabled
