@@ -148,9 +148,12 @@ VERB=1
 # DO NOT EDIT BELOW THIS LINE                                        #
 ######################################################################
 
-# Version
+# Declare
 maj=0
 min=2
+dpv=1.4.11
+dpi="RSI-Setup-${dpv}.exe"
+dpu="https://install.robertsspaceindustries.com/star-citizen"
 
 # Lookup putf
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
@@ -189,7 +192,7 @@ EOF
 synopsis () {
   cat <<EOF
 Usage: ${0##*/} [OPTION]
-    Star Citizen launcher script version $maj.$min
+    Unofficial Star Citizen launcher script version $maj.$min
     
 Options:
     -i=LIST   Install the quoted LIST of verbs with winetricks
@@ -197,7 +200,7 @@ Options:
     -p        Launch wine control panel
     -r        Purge ALL cached files (game + dxvk + opengl)
     -s        Silent mode
-    -u        Force update ../LIVE/loginData.json
+    -u        Force renew login infos ../LIVE/loginData.json
     -v        Show version
     -h        Show this help
 EOF
@@ -206,7 +209,7 @@ EOF
 
 # Process command line arguments
 [ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:vsu" a; do case $a in
-  h) synopsis                               ;;
+  h|-help) synopsis                               ;;
   v) version                                ;;
   c) wine_cfg='true'                        ;;
   p) wine_cpl='true'                        ;;
@@ -224,7 +227,7 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
 
 # Wine prefix path settings
-mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err 2 "Unable to find/create prefix"
+mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err $? "Unable to find/create prefix"
 inf "Prefix: $WINEPREFIX" "wine" 35
 
 # Check winetricks
@@ -238,7 +241,7 @@ vmc=$(cat /proc/sys/vm/max_map_count 2>/dev/null)
 }
 
 # Define path to script output (shell log)
-> "${logfile:=$WINEPREFIX/sc-last.log}"
+> "${logfile:=$WINEPREFIX/sc-last.log}" || err $? "Unable to write inside prefix"
 
 # Specify the runner bin directory
 _scrun=$(readlink -e "$_scrun")
@@ -276,7 +279,7 @@ for verb in $_scwtt; do
 done
 
 # Launch wine configuration tools on demand
-[ "$wine_cfg" -o "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
+[ "$wine_cfg" ] || [ "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
 
@@ -294,6 +297,12 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 [ -f "$game" ] || {
   _scins=$(readlink -e "$_scins")
   : ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
+  [ ! -f "$_scins" ] && ping -c 1 www.google.com >/dev/null 2>&1 && {
+    inf "Downloading $dpi" "conf" 31
+    wget -x -q --show-progress -O "$HOME/download/${dpi}" "${dpu}/${dpi}" && \
+      _scins=$(readlink -e "$HOME/download/${dpi}") || \
+      err $? "Failed to download or file not found"
+  } || inf "No internet connexion" "conf" 31
   [ ! -f "$_scins" ] && inf "Game installation not found" "2" 31 || {
     inf "Executing ${_scins##*/}" "conf" 31
     "$WINE" "$_scins" >> "$logfile" 2>&1 && {
@@ -394,7 +403,7 @@ inf "$logfile" "log"
 # Disable Kwin's Compositor
 kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 [ "$DEBUG" ] && COMPOS=1
-[ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor suspend >/dev/null 2>&1
+[ "${COMPOS:-0}" = "0" ] && [ "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor suspend >/dev/null 2>&1
 
 # Finally, launch the game
 [ "$DEBUG" ] || {
@@ -403,7 +412,7 @@ kwinState=$(qdbus org.kde.KWin /Compositor active 2>/dev/null)
 }
 
 # Re-enable Kwin's Compositor if it has been disabled
-[ "${COMPOS:-0}" = "0" -a "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor resume >/dev/null 2>&1
+[ "${COMPOS:-0}" = "0" ] && [ "$kwinState" = "true" ] && qdbus org.kde.KWin /Compositor resume >/dev/null 2>&1
 
 # Script uptime calculation
 [ "$DEBUG" ] || _hm $(( $(date +%s) - $st ))
