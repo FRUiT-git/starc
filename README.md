@@ -51,18 +51,18 @@ In case the user hasn't provided a runner's path, the script is trying to use th
 ## Command line parameters
 In order to ease the use of runners / wine vars, the script accepts a few parameters to enable things during the game's launching. The benefit of this is to ensure that the wine tools are launched using the runner's binaries (as opposed to vanilla wine).
 
-```
+```bash
 > sc -c
 ```
 This parameter launches the wine configuration window (**wine_cfg**) using the runner's binary.
 
-```
+```bash
 > sc -p
 ```
 This parameter launches the wine's control panel (**control.exe**) using the runner's binary.
 This is usefull for configuring joysticks in wine before playing the game.
 
-```
+```bash
 > sc -r
 ```
 This parameter removes all cached files and shader from :
@@ -70,7 +70,7 @@ This parameter removes all cached files and shader from :
 - DXVK
 - OpenGL
 
-```
+```bash
 > sc -i "list of winetricks verbs"
 ```
 Verbs can be added to the wine's prefix in it's configuration part, though this is the recommended way. With this parameter any additional winetricks verb can be installed on the fly.
