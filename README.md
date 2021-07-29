@@ -85,9 +85,9 @@ Examples : `sc -i "corefonts"`
 ### putf
 [putf](https://github.com/FRUiT-git/putf) Use this fancy tool to enhance your console output with formatted messages
 ### Feral Game Mode
-[Feral Game Mode](https://github.com/FeralInteractive/gamemode) Optimise Linux system performance on demand
+[Feral Game Mode](https://github.com/FeralInteractive/gamemode) can optimise Linux system performance on demand
 ### Mango HUD
-[Mango](https://github.com/flightlessmango/MangoHud) A Vulkan and OpenGL overlay for monitoring FPS, temperatures, CPU/GPU load and more
+[Mango](https://github.com/flightlessmango/MangoHud) is a Vulkan and OpenGL overlay for monitoring FPS, temperatures, CPU/GPU load and more
 ### vkBasalt
 [vkBasalt](https://github.com/DadSchoorse/vkBasalt) is a Vulkan post processing layer to enhance the visual graphics of games
 ### DXVK
