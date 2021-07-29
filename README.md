@@ -26,6 +26,7 @@ The script can toggle various linux / nividia / wine options to help adjusting t
 - WINE FSYNC
 - Enable Feral Game Mode
 - Enable Mango HUD
+- ...
 
 ### Prefix creation
 If the mentioned prefix path doesn't exist, it is configured and the two required verbs 'arial' and 'dxvk' are installed automatically using winetricks. Then a game installation is attempted, if the user described their game install path, or ultimately if some game install is found within the $HOME folder.
