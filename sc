@@ -226,6 +226,7 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 [ "${VERB:-0}" = "0" ] && unset VERB
 
 # Sanity check
+[ $(id -u) -eq 0 ] && err 4 "Please do NOT run as root"
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
 ping -c 1 www.google.com >/dev/null 2>&1 || err $? "No internet connexion"
 
