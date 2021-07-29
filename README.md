@@ -4,7 +4,7 @@ Cloud Imperium Games Star Citizen 3.13+ unofficial launcher script.
 
 This script is intended to run Star Citizen from shell using the less possible user knowledge and interaction.
 
-<ul>This script requires</ul>
+<u>This script requires</u>
 - [winetricks](https://github.com/Winetricks/winetricks)
 
 _Recommended runners_
