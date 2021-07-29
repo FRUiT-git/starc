@@ -1,5 +1,5 @@
 # starc
-Cloud Imperium Games Star Citizen 3.13+ launcher script.
+Cloud Imperium Games Star Citizen 3.13+ unofficial launcher script.
 
 This script is intended to run Star Citizen from shell using the less possible user knowledge and interaction.
 
