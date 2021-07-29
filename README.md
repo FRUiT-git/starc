@@ -31,10 +31,10 @@ The script can toggle various linux / nividia / wine options to help adjusting t
 If the mentioned prefix path doesn't exist, it is configured and the two required verbs 'arial' and 'dxvk' are installed automatically using winetricks. Then a game installation is attempted, if the user described their game install path, or ultimately if some game install is found within the $HOME folder.
 
 Alternatively, It is possible to override the prefix settings with the `WINEPREFIX` environment variable. i.e.
-```
+```bash
 > WINEPREFIX="/path/to/my/prefix" sc
 ```
-```
+```bash
 > export WINEPREFIX="/path/to/my/prefix"
 > sc
 ```
