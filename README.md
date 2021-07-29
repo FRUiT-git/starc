@@ -85,7 +85,7 @@ Examples : `sc -i "corefonts"`
 ### putf
 [putf](https://github.com/FRUiT-git/putf) Use this fancy tool to enhance your console output with formatted messages
 ### Feral Game Mode
-[Feral Game Mode](https://github.com/FeralInteractive/gamemode) can optimise Linux system performance on demand
+[GameMode](https://github.com/FeralInteractive/gamemode) is a daemon/lib combo for Linux that allows games to request a set of optimisations be temporarily applied to the host OS and/or a game process
 ### Mango HUD
 [Mango](https://github.com/flightlessmango/MangoHud) is a Vulkan and OpenGL overlay for monitoring FPS, temperatures, CPU/GPU load and more
 ### vkBasalt
