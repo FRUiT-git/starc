@@ -10,8 +10,10 @@ set -a
 #
 
 # [Required] Game installation
-# Path to RSI-Setup-*.*.**.exe launcher install file
+# Path to RSI-Setup-*.*.**.exe launcher installer
 # This is required only to create and configure new prefixes
+# If not set, script looks up within $HOME
+# If not found, script tries to download from RSI website
 # i.e. "$HOME/download/RSI-Setup-1.4.11.exe"
 _scins=
 
@@ -196,7 +198,7 @@ Usage: ${0##*/} [OPTION]
     
 Options:
     -i, --install=LIST  Install the quoted LIST of verbs with winetricks
-    -c, --config        Launch 'winecfg'
+    -c, --config        Launch wine configuration
     -p, --panel         Launch wine control panel
     -r, --purge-cache   Purge ALL cached files (game + dxvk + opengl)
     -s                  Silent mode
@@ -225,6 +227,7 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 
 # Sanity check
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
+ping -c 1 www.google.com >/dev/null 2>&1 || err $? "No internet connexion"
 
 # Wine prefix path settings
 mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err $? "Unable to find/create prefix"
@@ -297,12 +300,12 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 [ -f "$game" ] || {
   _scins=$(readlink -e "$_scins")
   : ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
-  [ ! -f "$_scins" ] && ping -c 1 www.google.com >/dev/null 2>&1 && {
+  [ ! -f "$_scins" ] && {
     inf "Downloading $dpi" "conf" 31
     wget -x -q --show-progress -O "$HOME/download/${dpi}" "${dpu}/${dpi}" && \
       _scins=$(readlink -e "$HOME/download/${dpi}") || \
       err $? "Failed to download or file not found"
-  } || inf "No internet connexion" "conf" 31
+  }
   [ ! -f "$_scins" ] && inf "Game installation not found" "2" 31 || {
     inf "Executing ${_scins##*/}" "conf" 31
     "$WINE" "$_scins" >> "$logfile" 2>&1 && {
@@ -347,26 +350,26 @@ mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
   inf "Wiped all cache files from $BRANCH" "conf" 31
 }
 
-# Specify where to put the DXVK cache file
-inf "State cache: ${DXVK_STATE_CACHE_PATH:=${cache:-not found}} [dxvk]" "${DXVK_STATE_CACHE:=${DXVKSC:-0}}"
-
 # Specify where to put the OpenGL cache files
 inf "GL: Shader cache: ${__GL_SHADER_DISK_CACHE_PATH:=${cache:-not found}}" "${__GL_SHADER_DISK_CACHE:=${USEGLC:-0}}"
 __GL_SHADER_DISK_CACHE_SIZE=17179869184
 #__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=0
 
-# Define the DXVK config file path
+# DXVK: Specify where to put the cache file
+inf "DXVK: State cache: ${DXVK_STATE_CACHE_PATH:=${cache:-not found}}" "${DXVK_STATE_CACHE:=${DXVKSC:-0}}"
+
+# DXVK: Define the config file path
 DXVK_CONFIG_FILE=$(readlink -e "${_scdxc:-$HOME/.dxvk/dxvk.conf}")
 inf "${DXVK_CONFIG_FILE:-Configuration file not found}" "dxvk"
 
-# Define the vulkan ICD config file path
+# DXVK: Define the vulkan ICD config file path
 VK_ICD_FILENAMES=$(readlink -e "${_scicd}")
 inf "${VK_ICD_FILENAMES:-ICD configuration file not found}" "dxvk"
 
-# DXVK log level
+# DXVK: Log level
 inf "Log level [dxvk]" "${DXVK_LOG_LEVEL:=${DXVKLL:-none}}"
 
-# Whether or not DXVK should use ASYNC
+# DXVK: Whether or not to use ASYNC
 inf "Async [dxvk]" "${DXVK_ASYNC:=${DXVKAS:-0}}"
 
 # Whether or not threaded optimizations should be used by OpenGL
@@ -375,7 +378,7 @@ inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
 # Define the VKBasalt config file path
 VKBASALT_LOG_LEVEL="none"
 VKBASALT_CONFIG_FILE=$(readlink -e "${_scvkb:-$WINEPREFIX/vkbasalt.conf}")
-inf "Config file: ${VKBASALT_CONFIG_FILE:-not found} [vkbasalt]" "${ENABLE_VKBASALT:=${BASALT:-0}}"
+inf "vkBasalt: Config file: ${VKBASALT_CONFIG_FILE:-not found}" "${ENABLE_VKBASALT:=${BASALT:-0}}"
 
 # Whether or not wine ESYNC and FSYNC should be enabled
 isfsync=$(\ls /sys/kernel | grep "futex")
