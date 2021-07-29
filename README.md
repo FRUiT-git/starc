@@ -22,10 +22,9 @@ This script can run from wherever. Preferably put it somewhere in your $PATH.
 The script can toggle various linux / nividia / wine options to help adjusting things for a better experience, such as
 - __GL_THREADED_OPTIMIZATIONS
 - DXVK ASYNC
-- WINE ESYNC
-- WINE FSYNC
-- Enable Feral Game Mode
-- Enable Mango HUD
+- WINE ESYNC and FSYNC
+- Feral Game Mode
+- Mango HUD
 - ...
 
 ### Prefix creation
