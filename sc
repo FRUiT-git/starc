@@ -195,29 +195,29 @@ Usage: ${0##*/} [OPTION]
     Unofficial Star Citizen launcher script version $maj.$min
     
 Options:
-    -i=LIST   Install the quoted LIST of verbs with winetricks
-    -c        Launch 'winecfg'
-    -p        Launch wine control panel
-    -r        Purge ALL cached files (game + dxvk + opengl)
-    -s        Silent mode
-    -u        Force renew login infos ../LIVE/loginData.json
-    -v        Show version
-    -h        Show this help
+    -i, --install=LIST  Install the quoted LIST of verbs with winetricks
+    -c, --config        Launch 'winecfg'
+    -p, --panel         Launch wine control panel
+    -r, --purge-cache   Purge ALL cached files (game + dxvk + opengl)
+    -s                  Silent mode
+    -u                  Force renew login infos ../LIVE/loginData.json
+    -v, --version       Show version
+    -h, --help          Show this help
 EOF
   exit 0
 }
 
 # Process command line arguments
 [ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:vsu" a; do case $a in
-  h|-help) synopsis                               ;;
-  v) version                                ;;
-  c) wine_cfg='true'                        ;;
-  p) wine_cpl='true'                        ;;
-  r) rm_cache='true'                        ;;
-  u) DNC='true'                             ;;
-  d) DEBUG='true'                           ;;
-  i) _scwtt="${OPTARG}${_scwtt:+ $_scwtt}"  ;;
-  s) unset VERB                             ;;
+         h|-help) synopsis                               ;;
+      v|-version) version                                ;;
+       c|-config) wine_cfg='true'                        ;;
+        p|-panel) wine_cpl='true'                        ;;
+  r|-purge-cache) rm_cache='true'                        ;;
+               u) DNC='true'                             ;;
+               d) DEBUG='true'                           ;;
+      i|-install) _scwtt="${OPTARG}${_scwtt:+ $_scwtt}"  ;;
+               s) unset VERB                             ;;
 esac ; done ; shift $(($OPTIND-1)) ; }
 
 # Check VERB
