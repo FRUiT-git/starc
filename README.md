@@ -74,7 +74,7 @@ This parameter removes all cached files and shader from :
 ```bash
 > sc -i "list of winetricks verbs"
 ```
-Verbs can be added to the wine's prefix in it's configuration part, though this is the recommended way. With this parameter any additional winetricks verb can be installed on the fly.
+Verbs can be added to the wine's prefix in the script's configuration part, though this is the recommended way. With this parameter any additional winetricks verb can be installed on the fly.
 
 Examples : `sc -i "corefonts"`
            `sc -i "vcrun2019 win10 vlc mspaint"`
