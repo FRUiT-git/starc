@@ -153,9 +153,9 @@ VERB=1
 # Declare
 maj=0
 min=2
-dpv=1.4.11
-dpi="RSI-Setup-${dpv}.exe"
-dpu="https://install.robertsspaceindustries.com/star-citizen"
+dpv="1.4.11"
+dpu="https://install.robertsspaceindustries.com/star-citizen/RSI-Setup-${dpv}.exe"
+isfsync=$(\ls /sys/kernel | grep "futex")
 
 # Lookup putf
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
@@ -210,7 +210,7 @@ EOF
 }
 
 # Process command line arguments
-[ "^${1#-}" != "^${1}" ] && { while getopts ":cprhdi:vsu" a; do case $a in
+[ "^${1#-}" != "^${1}" ] && { while getopts ":hvcprudi:s" a; do case $a in
          h|-help) synopsis                               ;;
       v|-version) version                                ;;
        c|-config) wine_cfg='true'                        ;;
@@ -226,12 +226,13 @@ esac ; done ; shift $(($OPTIND-1)) ; }
 [ "${VERB:-0}" = "0" ] && unset VERB
 
 # Sanity check
-[ $(id -u) -eq 0 ] && err 4 "Please do NOT run as root"
+[ $(id -u) -eq 0 2>/dev/null ] && err 4 "Please do NOT run as root"
 [ "$DISPLAY" ] || err 3 "No graphical environment found"
 ping -c 1 www.google.com >/dev/null 2>&1 || err $? "No internet connexion"
 
 # Wine prefix path settings
-mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || err $? "Unable to find/create prefix"
+mkdir -p "${WINEPREFIX:=${_scpre:-$HOME/Games/starcitizen}}" 2>/dev/null || \
+err $? "Unable to find/create prefix"
 inf "Prefix: $WINEPREFIX" "wine" 35
 
 # Check winetricks
@@ -269,7 +270,7 @@ inf "DLL path: ${WINEDLLPATH:-not found}" "wine"
 case :$PATH: in *:${rbin}:*) ;; *) PATH="$PATH${PATH:+:}${rbin}" ;; esac
 
 # Configure prefix
-[ -f "$WINEPREFIX/system.reg" ] || {
+[ -e "$WINEPREFIX/system.reg" ] || {
   inf "Configuring the new prefix, please wait" "conf" 31
   wine_cfg='true'
   wine_cpl='true'
@@ -283,7 +284,7 @@ for verb in $_scwtt; do
 done
 
 # Launch wine configuration tools on demand
-[ "$wine_cfg" ] || [ "$wine_cpl" ] && inf "Launching wine configuration panel" "conf" 31
+[ "$wine_cfg" ] || [ "$wine_cpl" ] && inf "Launching wine configuration" "conf" 31
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
 
@@ -300,11 +301,11 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 # If launcher is not installed, try to install
 [ -f "$game" ] || {
   _scins=$(readlink -e "$_scins")
-  : ${_scins:="$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)"}
+  : ${_scins:=$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)}
   [ ! -f "$_scins" ] && {
-    inf "Downloading $dpi" "conf" 31
-    wget -x -q --show-progress -O "$HOME/download/${dpi}" "${dpu}/${dpi}" && \
-      _scins=$(readlink -e "$HOME/download/${dpi}") || \
+    inf "Downloading ${dpu##*/}" "conf" 31
+    wget -x -q --show-progress -O "$HOME/download/${dpu##*/}" "${dpu}" && \
+      _scins=$(readlink -e "$HOME/download/${dpu##*/}") || \
       err $? "Failed to download or file not found"
   }
   [ ! -f "$_scins" ] && inf "Game installation not found" "2" 31 || {
@@ -351,12 +352,12 @@ mkdir -p "${cache:=${_scglc:-$WINEPREFIX/cache}}"
   inf "Wiped all cache files from $BRANCH" "conf" 31
 }
 
-# Specify where to put the OpenGL cache files
+# Specify where to put OpenGL cache
 inf "GL: Shader cache: ${__GL_SHADER_DISK_CACHE_PATH:=${cache:-not found}}" "${__GL_SHADER_DISK_CACHE:=${USEGLC:-0}}"
 __GL_SHADER_DISK_CACHE_SIZE=17179869184
 #__GL_SHADER_DISK_CACHE_SKIP_CLEANUP=0
 
-# DXVK: Specify where to put the cache file
+# DXVK: Specify where to put cache
 inf "DXVK: State cache: ${DXVK_STATE_CACHE_PATH:=${cache:-not found}}" "${DXVK_STATE_CACHE:=${DXVKSC:-0}}"
 
 # DXVK: Define the config file path
@@ -368,10 +369,10 @@ VK_ICD_FILENAMES=$(readlink -e "${_scicd}")
 inf "${VK_ICD_FILENAMES:-ICD configuration file not found}" "dxvk"
 
 # DXVK: Log level
-inf "Log level [dxvk]" "${DXVK_LOG_LEVEL:=${DXVKLL:-none}}"
+inf "DXVK: Log level" "${DXVK_LOG_LEVEL:=${DXVKLL:-none}}"
 
 # DXVK: Whether or not to use ASYNC
-inf "Async [dxvk]" "${DXVK_ASYNC:=${DXVKAS:-0}}"
+inf "DXVK: Async" "${DXVK_ASYNC:=${DXVKAS:-0}}"
 
 # Whether or not threaded optimizations should be used by OpenGL
 inf "GL: Threaded Optimizations" "${__GL_THREADED_OPTIMIZATIONS:=${USETOPT:-0}}"
@@ -382,7 +383,6 @@ VKBASALT_CONFIG_FILE=$(readlink -e "${_scvkb:-$WINEPREFIX/vkbasalt.conf}")
 inf "vkBasalt: Config file: ${VKBASALT_CONFIG_FILE:-not found}" "${ENABLE_VKBASALT:=${BASALT:-0}}"
 
 # Whether or not wine ESYNC and FSYNC should be enabled
-isfsync=$(\ls /sys/kernel | grep "futex")
 [ "$isfsync" ] && [ "${WINEFSYNC:-0}" = "1" ] && unset WINEESYNC
 [ "$isfsync" ] || unset WINEFSYNC
 inf "Wine E-sync" "${WINEESYNC:=0}"
