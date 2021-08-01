@@ -287,6 +287,7 @@ done
 [ "$wine_cfg" ] || [ "$wine_cpl" ] && inf "Launching wine configuration" "conf" 31
 [ "$wine_cfg" ] && "$rbin"/winecfg >> "$logfile" 2>&1
 [ "$wine_cpl" ] && "$WINE" control >> "$logfile" 2>&1
+$WINESERVER -k
 
 # Use PTU or LIVE
 [ "${USEPTU:-0}" != "0" ] && BRANCH="PTU"
@@ -301,7 +302,7 @@ game="$rsip/RSI Launcher/RSI Launcher.exe"
 # If launcher is not installed, try to install
 [ -f "$game" ] || {
   _scins=$(readlink -e "$_scins")
-  : ${_scins:=$(find $HOME -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)}
+  : ${_scins:=$(find "$HOME" -name "RSI-Setup*.exe" -type f -print0 -quit 2>/dev/null)}
   [ ! -f "$_scins" ] && {
     inf "Downloading ${dpu##*/}" "conf" 31
     wget -x -q --show-progress -O "$HOME/download/${dpu##*/}" "${dpu}" && \
