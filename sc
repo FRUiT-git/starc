@@ -161,20 +161,14 @@ isfsync=$(\ls /sys/kernel | grep "futex")
 [ "${USEPUTF:-0}" != "0" ] && p="$(which putf)"
 
 # Procedure parsing information on screen
-inf () {
-  [ "${3:-$VERB}" ] && {
-    [ "$p" ] && "$p" -c ${3:-32} -L "$2" "$1" || \
-    printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1"
-  }
-  return 0
-}
+[ "$p" ] && \
+inf () { [ "${3:-$VERB}" ] && "$p" -c ${3:-32} -L "$2" "$1" ; return 0 ; } || \
+inf () { [ "${3:-$VERB}" ] && printf "  [\033[${3:-32}m%04b\033[0;0m] %b\n" "$2" "$1" ; return 0 ; }
 
 # Procedure handling fatal errors
-err () {
-  [ "$p" ] && "$p" -e "$2" "$1" 1>&2 || \
-  printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2
-  exit $1
-}
+[ "$p" ] && \
+err () { "$p" -e "$2" "$1" 1>&2 ; exit $1 ; } || \
+err () { printf "  [\033[31m%04b\033[0;0m] %b\n" "$1" "Error: $2" 1>&2 ; exit $1 ; }
 
 # Procedure converting an amount of seconds (duration) in the format HH:MM
 _hm () {
